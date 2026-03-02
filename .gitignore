@@ -1,0 +1,13 @@
+data/
+*.pyc
+__pycache__/
+*.log
+.DS_Store
+venv/
+build/
+dist/
+*.bak
+test_up.txt
+image/report_*.png
+image/test_render_output.png
+/help_docs/

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隐秘之潮 Wiki</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=ZCOOL+QingKe+HuangYou&display=swap"
+        rel="stylesheet">
+    <!-- Wiki CSS -->
+    <link rel="stylesheet" href="/static/css/wiki.css?v=final_fix_v3">
+    <!-- PixiJS for Shader Background -->
+    <script src="https://pixijs.download/v7.2.4/pixi.min.js"></script>
+    <!-- Marked for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="wiki-header">
+        <div class="header-left">
+            <div class="logo" onclick="showPortal()">
+                <div class="logo-icon">W</div>
+                隐秘之潮 Wiki
+            </div>
+            <div class="search-box">
+                <i class="search-icon">🔍</i>
+                <input type="text" class="search-input" id="searchInput" placeholder="搜索词条..." oninput="handleSearch()"
+                    onfocus="handleSearch()">
+                <div class="search-dropdown" id="searchDropdown">
+                    <!-- Dynamic search results -->
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <a href="/dashboard" class="header-btn">返回看板</a>
+            <a href="/docs" class="header-btn" target="_blank">帮助文档</a>
+            <button class="header-btn primary" onclick="requestEditMode()">+ 新建词条</button>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="wiki-sidebar" id="wikiSidebar">
+        <div class="sidebar-nav-section">
+            <div class="sidebar-label">导航</div>
+
+            <div class="sidebar-nav-item" onclick="showPortal()">
+                <span class="sidebar-icon">🏠</span>
+                <span>首页</span>
+            </div>
+
+            <div class="sidebar-label" style="margin-top: 20px;">分类浏览</div>
+
+            <div class="sidebar-nav-item" data-category="monster" onclick="showCategoryList('monster')">
+                <span class="sidebar-icon">👾</span>
+                <span>怪物图鉴</span>
+                <span class="sidebar-count" id="count-monster">0</span>
+            </div>
+
+            <div class="sidebar-nav-item" data-category="item" onclick="showCategoryList('item')">
+                <span class="sidebar-icon">🔮</span>
+                <span>道具遗物</span>
+                <span class="sidebar-count" id="count-item">0</span>
+            </div>
+
+            <div class="sidebar-nav-item" data-category="talent" onclick="showCategoryList('talent')">
+                <span class="sidebar-icon">🧬</span>
+                <span>天赋系统</span>
+                <span class="sidebar-count" id="count-talent">0</span>
+            </div>
+
+            <div class="sidebar-nav-item" data-category="character" onclick="showCategoryList('character')">
+                <span class="sidebar-icon">👤</span>
+                <span>角色介绍</span>
+                <span class="sidebar-count" id="count-character">0</span>
+            </div>
+
+            <div class="sidebar-nav-item" data-category="lore" onclick="showCategoryList('lore')">
+                <span class="sidebar-icon">📜</span>
+                <span>世界设定</span>
+                <span class="sidebar-count" id="count-lore">0</span>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="wiki-main">
+
+        <!-- Portal View (Homepage) -->
+        <div id="portalView" class="portal-view" style="position: relative;">
+
+            <!-- 1. Text Layer (Stable Positioning) -->
+            <div class="portal-text-independent"
+                style="position: absolute; top: 180px; left: 320px; z-index: 100; pointer-events: none;">
+                <div class="portal-title" style="pointer-events: auto;">隐秘之潮</div>
+                <div class="portal-subtitle" style="pointer-events: auto;">沉浸式项目知识库</div>
+                <div class="portal-stats" style="pointer-events: auto; margin-top: 20px;">
+                    <div class="portal-stat">
+                        <div class="portal-stat-value" id="statTotal">--</div>
+                        <div class="portal-stat-label">总词条</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="portal-hero" id="portalHero">
+                <canvas id="particleCanvas" style="z-index: 2; position: relative; pointer-events: none;"></canvas>
+                <!-- Put shader on top of background but behind text/particles if needed. User requested "very top".
+                     If it's "very top", it might cover text? 
+                     "The layer of the image corresponding to the shader... to the very top. Now there is always a black thing covering it."
+                     Currently text is overlay. 
+                     Let's set z-index: 1 and ensure no background covers it. 
+                -->
+                <div id="heroShaderContainer" style="position: absolute; inset: 0; z-index: 1; opacity: 1.0;"></div>
+
+                <!-- CSS glow removed, shader handles lighting -->
+                <div class="portal-glow-center"></div>
+
+
+            </div>
+
+
+
+            <div class="category-grid">
+                <div class="category-card" data-category="monster" onclick="showCategoryList('monster')">
+                    <div class="category-icon">
+                        <img src="/wiki/assets/icon_monster.png"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <div class="category-icon-placeholder" style="display:none">👾</div>
+                    </div>
+                    <div class="category-name">怪物图鉴</div>
+                    <div class="category-count" id="portal-count-monster">-- 条</div>
+                </div>
+
+                <div class="category-card" data-category="item" onclick="showCategoryList('item')">
+                    <div class="category-icon">
+                        <img src="/wiki/assets/icon_item.png"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <div class="category-icon-placeholder" style="display:none">🔮</div>
+                    </div>
+                    <div class="category-name">道具遗物</div>
+                    <div class="category-count" id="portal-count-item">-- 条</div>
+                </div>
+
+                <div class="category-card" data-category="talent" onclick="showCategoryList('talent')">
+                    <div class="category-icon">
+                        <img src="/wiki/assets/icon_talent.png"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <div class="category-icon-placeholder" style="display:none">🧬</div>
+                    </div>
+                    <div class="category-name">天赋系统</div>
+                    <div class="category-count" id="portal-count-talent">-- 条</div>
+                </div>
+
+                <div class="category-card" data-category="character" onclick="showCategoryList('character')">
+                    <div class="category-icon">
+                        <img src="/wiki/assets/icon_character.png"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <div class="category-icon-placeholder" style="display:none">👤</div>
+                    </div>
+                    <div class="category-name">角色介绍</div>
+                    <div class="category-count" id="portal-count-character">-- 条</div>
+                </div>
+
+                <div class="category-card" data-category="lore" onclick="showCategoryList('lore')">
+                    <div class="category-icon">
+                        <img src="/wiki/assets/icon_lore.png"
+                            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                        <div class="category-icon-placeholder" style="display:none">📜</div>
+                    </div>
+                    <div class="category-name">世界设定</div>
+                    <div class="category-count" id="portal-count-lore">-- 条</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category List View -->
+        <div id="categoryListView" class="category-list-view">
+            <div class="category-list-header">
+                <button class="back-btn" onclick="showPortal()">←</button>
+                <div class="category-list-icon" id="categoryListIcon"></div>
+                <div class="category-list-title" id="categoryListTitle">分类名称</div>
+            </div>
+
+            <div id="entryGrid" class="entry-grid">
+                <!-- Entries injected here -->
+            </div>
+        </div>
+
+        <!-- Entry Detail View -->
+        <div id="entryView" class="entry-view">
+            <div class="breadcrumb">
+                <button class="back-link" onclick="goBack()">← 返回</button>
+                <span style="opacity: 0.3;">/</span>
+                <a href="#" onclick="showPortal()">首页</a>
+                <span style="opacity: 0.3;">/</span>
+                <span id="breadcrumbType">分类</span>
+                <span style="opacity: 0.3;">/</span>
+                <span id="breadcrumbTitle" style="color: var(--text-bright);">当前页面</span>
+            </div>
+
+            <div class="entry-layout">
+                <div class="entry-content">
+                    <!-- Cover Image Container -->
+                    <div id="entryCover" class="entry-cover" style="display:none;"></div>
+
+                    <div class="entry-title" id="entryTitle">Title</div>
+                    <div class="entry-subtitle" id="entrySubtitle">Subtitle</div>
+
+                    <button class="btn btn-secondary" style="margin-bottom: 24px; font-size: 12px; padding: 6px 12px;"
+                        onclick="requestEditMode()">
+                        ✎ 编辑此页
+                    </button>
+
+                    <div class="entry-main-wrapper">
+                        <div id="entryToc" class="toc-container" style="display:none;"></div>
+                        <div class="entry-body markdown-body" id="entryBody">
+                            <!-- Content -->
+                        </div>
+                    </div>
+                </div>
+
+                <aside class="entry-sidebar">
+                    <div class="entry-infobox">
+                        <div class="infobox-header">
+                            <div class="infobox-title" id="infoboxTitle">Name</div>
+                            <div class="infobox-type" id="infoboxType">TYPE</div>
+                            <!-- Icon/Image injected in JS if exists -->
+                        </div>
+                        <div class="infobox-table" id="infoboxTable">
+                            <!-- Dynamic Data -->
+                        </div>
+                        <div class="infobox-tags" id="infoboxTags">
+                            <!-- Tags -->
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- Edit/Create View -->
+        <div id="editView" class="edit-view">
+            <div class="edit-form">
+                <div class="edit-header">
+                    <div class="edit-title" id="editFormTitle">编辑词条</div>
+                    <div class="edit-actions">
+                        <button class="btn btn-secondary" onclick="cancelEdit()">取消</button>
+                        <button class="btn btn-primary" onclick="saveEntry()">💾 保存更改</button>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">词条 ID (唯一)</label>
+                        <input type="text" class="form-input" id="editId" placeholder="例如: monster_slime_01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">类型</label>
+                        <select class="form-select" id="editType" onchange="updateInfoboxFields()">
+                            <option value="monster">怪物 (Monster)</option>
+                            <option value="item">道具 (Item)</option>
+                            <option value="talent">天赋 (Talent)</option>
+                            <option value="character">角色 (Character)</option>
+                            <option value="lore">设定 (Lore)</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">标题</label>
+                        <input type="text" class="form-input" id="editTitle" placeholder="例如: 史莱姆">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">副标题 (Eng / ID)</label>
+                        <input type="text" class="form-input" id="editSubtitle" placeholder="例如: Slime">
+                    </div>
+
+                    <!-- Cover Image Upload -->
+                    <div class="form-group full-width">
+                        <label class="form-label">封面图片 (Infobox显示)</label>
+                        <div class="image-upload-zone" id="coverImageZone"
+                            onclick="document.getElementById('coverImageInput').click()">
+                            <div class="image-upload-icon">🖼️</div>
+                            <div class="image-upload-text">点击上传封面图片</div>
+                        </div>
+                        <input type="file" id="coverImageInput" style="display: none;" accept="image/*"
+                            onchange="handleCoverImageUpload(event)">
+                    </div>
+
+                    <!-- Icon Upload -->
+                    <div class="form-group">
+                        <label class="form-label">图标 (列表显示) [推荐 1:1]</label>
+                        <div class="icon-upload-zone" id="iconUploadZone"
+                            onclick="document.getElementById('iconImageInput').click()">
+                            <div class="icon-upload-placeholder" id="iconUploadPlaceholder">
+                                <span>Upload</span>
+                            </div>
+                            <!-- Preview Injected Here -->
+                        </div>
+                        <input type="file" id="iconImageInput" style="display: none;" accept="image/*"
+                            onchange="handleIconImageUpload(event)">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label">标签 (逗号分隔)</label>
+                        <input type="text" class="form-input" id="editTags" placeholder="普通, 森林, 掉落物">
+                    </div>
+                </div>
+
+                <!-- Dynamic Data Fields -->
+                <div id="infoboxFieldsContainer"></div>
+
+                <!-- Talent Specific Fields -->
+                <div id="editTalentFields" style="display:none; margin-top:24px;">
+                    <div class="edit-section-title">🧬 天赋配置</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">天赋组 (Group ID)</label>
+                            <input type="text" class="form-input" id="editTalentGroup" placeholder="例如: warrior_basic">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">前置天赋IDs (逗号分隔)</label>
+                            <input type="text" class="form-input" id="editTalentParents"
+                                placeholder="talent_01, talent_02">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group full-width" style="margin-top: 24px;">
+                    <label class="form-label">
+                        <span>正文内容 (Markdown)</span>
+                        <div class="editor-toolbar">
+                            <button type="button" class="editor-toolbar-btn" onclick="toggleLinkPicker(this)">+
+                                插入词条链接</button>
+                            <div class="editor-dropdown" id="linkPickerDropdown">
+                                <input type="text" id="linkPickerInput" placeholder="搜索并插入..."
+                                    oninput="filterLinkPicker()" class="entry-picker-input"
+                                    style="border:none; border-bottom:1px solid var(--border); border-radius:8px 8px 0 0;">
+                                <div id="linkPickerList" style="max-height:200px; overflow-y:auto;"></div>
+                            </div>
+                        </div>
+                    </label>
+                    <textarea class="form-textarea" id="editContent"
+                        placeholder="在此输入详细内容... 支持 Markdown 语法"></textarea>
+                </div>
+
+                <!-- Content Images Upload -->
+                <div class="form-group full-width">
+                    <label class="form-label">正文图库 (点击复制)</label>
+                    <div class="content-images-gallery" id="contentImagesGallery">
+                        <!-- Gallery items -->
+                        <div class="add-image-btn" onclick="document.getElementById('contentImageInput').click()">
+                            <span>+</span>
+                        </div>
+                        <div class="add-image-btn" onclick="openImageLibraryModal()"
+                            style="background: var(--bg-deep); border: 1px dashed var(--text-muted);">
+                            <span>📂</span>
+                        </div>
+                    </div>
+                    <input type="file" id="contentImageInput" style="display: none;" accept="image/*"
+                        onchange="handleContentImageUpload(event)">
+                </div>
+
+                <!-- Related Entries -->
+                <div class="related-entries-section">
+                    <div class="related-entries-header">
+                        <span class="related-entries-title">🔗 关联词条</span>
+                        <div class="entry-picker">
+                            <input type="text" id="entryPickerInput" class="entry-picker-input" placeholder="添加关联..."
+                                oninput="filterEntriesForPicker()" onfocus="filterEntriesForPicker()">
+                            <div class="entry-picker-dropdown" id="entryPickerDropdown">
+                                <!-- entries -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="related-entries-list" id="relatedEntriesList">
+                        <!-- tags -->
+                    </div>
+                </div>
+
+                <div style="margin-top: 40px; border-top: 1px solid var(--border); padding-top: 24px;">
+                    <button class="btn"
+                        style="color: var(--accent-red); border: 1px solid var(--border); background: transparent;"
+                        id="deleteEntryBtn" onclick="confirmDeleteEntry()">
+                        🗑️ 删除此词条
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="verifyModal">
+        <div class="modal-box">
+            <div class="modal-title">身份验证</div>
+            <input type="password" class="modal-input" id="verifyCode" placeholder="输入访问码">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="verifyCode()">验证</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Library Modal -->
+    <div class="modal-overlay" id="imageLibraryModal">
+        <div class="modal-box large-modal" style="width: 800px; max-width: 90vw;">
+            <div class="modal-title">
+                <span>选择图片</span>
+                <span style="font-size: 14px; opacity: 0.7; margin-left: 10px;">点击添加到正文图库</span>
+            </div>
+            <div class="image-library-grid" id="imageLibraryGrid"
+                style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; max-height: 60vh; overflow-y: auto; margin: 20px 0;">
+                <!-- Images loaded here -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeImageLibraryModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">操作成功</div>
+
+    <!-- Init Logic -->
+    <script src="/static/js/wiki_effects.js?v=final_fix_v2"></script>
+    <script src="/static/js/wiki_core.js?v=final_fix_v4"></script>
+
+</body>
+
+</html>

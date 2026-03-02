@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隐秘之潮 - 任务看板</title>
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables Dark CSS -->
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #020406;
+            --card-bg: rgba(16, 24, 32, 0.85);
+            --border-color: #1f2f3d;
+            --text-main: #c0cdd6;
+            --text-muted: #627d92;
+            --accent-green: #20c284;
+            --accent-glow: #38ef7d;
+            --accent-purple: #8e44ad;
+            --accent-red: #c0392b;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 50%, #0d161d 0%, #020406 100%);
+            font-family: 'Noto Sans SC', sans-serif;
+            color: var(--text-main);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Scanline Overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.15;
+        }
+
+        /* Hero Section (PixiJS) */
+        #hero-canvas-container {
+            width: 100%;
+            height: 55vh;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--accent-green);
+            box-shadow: 0 0 50px rgba(32, 194, 132, 0.1);
+        }
+
+        #hero-canvas-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* NavBar */
+        .navbar {
+            background: rgba(2, 4, 6, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(5px);
+        }
+
+        .navbar-brand {
+            font-family: 'Ma Shan Zheng', cursive;
+            letter-spacing: 2px;
+            font-size: 1.5rem;
+            color: var(--accent-green) !important;
+            text-shadow: 0 0 10px rgba(32, 194, 132, 0.5);
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin-bottom: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header {
+            background-color: rgba(32, 194, 132, 0.05);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--accent-glow);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Metrics */
+        .metric-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.2));
+            border: 1px solid var(--border-color);
+        }
+
+        .metric-value {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 3em;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        /* Tables & Badges */
+        .table {
+            color: var(--text-main);
+        }
+
+        .table-light {
+            --bs-table-bg: #0b1219;
+            --bs-table-color: var(--accent-green);
+            border-color: var(--border-color);
+        }
+
+        .table-hover tbody tr:hover {
+            color: #fff;
+            background-color: rgba(32, 194, 132, 0.1);
+        }
+
+        /* Studio XP Styles */
+        .xp-container {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(32, 194, 132, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(32, 194, 132, 0.1) inset;
+        }
+
+        .xp-bar-outer {
+            height: 25px;
+            background: #111;
+            border-radius: 12px;
+            border: 1px solid #333;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .xp-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, #11998e, #38ef7d);
+            width: 0%;
+            transition: width 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .xp-bar-inner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: xp-sweep 2s infinite;
+        }
+
+        @keyframes xp-sweep {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .level-badge {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent-glow);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .recent-win-item {
+            padding: 8px 12px;
+            border-left: 3px solid var(--accent-glow);
+            margin-bottom: 8px;
+            background: rgba(32, 194, 132, 0.05);
+            font-size: 0.85em;
+            animation: fadeInRight 0.5s ease-out;
+        }
+
+        .personal-title {
+            font-family: 'STKaiti', 'serif';
+            font-size: 0.75em;
+            color: #f1c40f;
+            border: 1px solid rgba(241, 196, 15, 0.3);
+            padding: 1px 4px;
+            border-radius: 3px;
+            margin-left: 5px;
+            display: inline-block;
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .badge {
+            border: 1px solid transparent;
+            padding: 0.5em 0.8em;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(2px);
+        }
+
+        .bg-warning {
+            border-color: #ffc107;
+            color: #ffc107;
+            background: rgba(255, 193, 7, 0.1) !important;
+        }
+
+        .bg-success {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            background: rgba(32, 194, 132, 0.1) !important;
+        }
+
+        .bg-danger {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+            background: rgba(192, 57, 43, 0.1) !important;
+        }
+
+        /* Squad Card Styles */
+        .squad-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .squad-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-glow);
+        }
+
+        .squad-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-glow);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .squad-icon {
+            font-size: 1.5rem;
+            opacity: 0.8;
+            margin-right: 10px;
+        }
+
+        .squad-role-tag {
+            font-size: 0.7em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .squad-member-name {
+            font-weight: bold;
+            color: var(--accent-glow);
+            font-family: 'STHeiti', sans-serif;
+        }
+
+        .squad-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 8px;
+            padding-top: 6px;
+            font-size: 0.75em;
+            color: #888;
+        }
+
+        .bg-secondary {
+            border-color: #666;
+            color: #666;
+            background: rgba(100, 100, 100, 0.1) !important;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1f2f3d;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-green);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Hero Profile Modal (Moved to Top for Stacking) -->
+    <div class="modal fade" id="heroModal" tabindex="-1" style="z-index: 9999;">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-secondary shadow-lg" style="background: #0f1215; border: 1px solid #333;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title" id="heroModalLabel"
+                        style="color: var(--accent-glow); font-family: 'STHeiti', sans-serif;">HERO_PROFILE</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-5 text-center">
+                            <div id="heroAvatarContainer" class="mb-3"
+                                style="position: relative; display: inline-block;">
+                                <div
+                                    style="width: 120px; height: 120px; background: rgba(32, 194, 132, 0.1); border: 2px solid var(--accent-glow); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; box-shadow: 0 0 25px rgba(32, 194, 132, 0.3); position: relative; z-index: 1;">
+                                    👤
+                                </div>
+                                <div id="heroAvatarOrnaments"></div>
+                                <div id="heroLevelTag"
+                                    style="position: absolute; bottom: 0; right: 0; background: var(--accent-glow); color: #000; font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; z-index: 10;">
+                                    LV.1</div>
+                            </div>
+                            <h3 id="heroNameLarge" class="mb-0 text-white"></h3>
+                            <div id="heroRoleText" class="text-muted small mb-3"></div>
+
+                            <div id="heroTitlesLarge" class="d-flex flex-wrap justify-content-center gap-1 mb-4">
+                            </div>
+
+                            <div class="p-3 rounded" style="background: rgba(255,255,255,0.05);">
+                                <div class="row text-center">
+                                    <div class="col-6 mb-2">
+                                        <div class="text-muted x-small">完成任务</div>
+                                        <div id="statDone" class="h5 text-success mb-0">--</div>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <div class="text-muted x-small">进行中</div>
+                                        <div id="statActive" class="h5 text-warning mb-0">--</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted x-small">Bug处理</div>
+                                        <div id="statBug" class="h5 text-danger mb-0">--</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted x-small">响应力</div>
+                                        <div id="statUrgency" class="h5 text-info mb-0">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <div id="heroRadarChart" style="width: 100%; height: 260px;"></div>
+
+                            <!-- Missions Section -->
+                            <div class="mt-2 text-start">
+                                <label class="text-muted x-small mb-1 fw-bold"
+                                    style="letter-spacing: 1px;">ACTIVE_MISSIONS (IN_PROGRESS)</label>
+                                <div id="heroActiveTasks" class="small overflow-auto mb-2" style="max-height: 100px;">
+                                </div>
+
+                                <label class="text-muted x-small mb-1 fw-bold"
+                                    style="letter-spacing: 1px;">BACKLOG_MISSIONS (WAITING)</label>
+                                <div id="heroBacklogTasks" class="small overflow-auto mb-2" style="max-height: 100px;">
+                                </div>
+                            </div>
+
+                            <label class="text-muted x-small mb-2 fw-bold" style="letter-spacing: 1px;">BATTLE_HISTORY
+                                (RECENT_WINS)</label>
+                            <div id="heroBattleHistory" class="small overflow-auto" style="max-height: 100px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- HERO SECTION -->
+    <div id="hero-canvas-container"></div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="#">
+                <span style="font-size:1.2em">👁️‍🗨️</span> 隐秘之潮
+            </a>
+            <div class="ms-auto d-flex gap-3">
+                <span class="text-muted align-self-center small d-none d-md-block"
+                    style="font-family:'Courier New'">SYS_STATUS: ONLINE</span>
+                <a class="btn btn-outline-secondary btn-sm" href="#" onclick="requestUpdate()" id="btnUpdate">🔄
+                    更新数据</a>
+                <a class="btn btn-outline-light btn-sm" href="/">返回控制台</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 py-4" style="position:relative; z-index: 10;">
+        <!-- Studio XP Section -->
+        <div class="xp-container mb-4">
+            <div class="d-flex justify-content-between align-items-end mb-2">
+                <div>
+                    <span class="text-muted small">STUDIO_GOAL: VERSION_RELEASE</span>
+                    <h3 class="mb-0" style="letter-spacing: 1px;">工作室开发进度 (Studio XP)</h3>
+                </div>
+                <div class="text-end">
+                    <div class="level-badge" id="xpPercent">0%</div>
+                    <div class="text-muted small" id="xpRaw">0 / 0 TASKS</div>
+                </div>
+            </div>
+            <div class="xp-bar-outer">
+                <div class="xp-bar-inner" id="xpBar"></div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+
+            <div class="row">
+                <!-- Left Column: Activity & Intelligence -->
+                <div class="col-lg-8">
+                    <!-- Main Battle Report -->
+                    <div class="card mb-4" style="border-image: linear-gradient(45deg, var(--accent-glow), #8e44ad) 1;">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="fs-4">⚔️ 全员英雄战报 (Studio Battle Report)</span>
+                            <div class="spinner-grow spinner-grow-sm text-success" role="status"></div>
+                        </div>
+                        <div class="card-body px-0 py-2">
+                            <div id="winFeed" style="min-height: 250px; max-height: 450px; overflow-y: auto;">
+                                <div class="text-center py-5 text-muted">正在同步前线战报...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strategic Intelligence (Compressed Charts) -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card h-100 mb-0" style="opacity: 0.9;">
+                                <div class="card-header py-1 small">风险雷达 (Radar)</div>
+                                <div class="card-body p-1">
+                                    <div id="riskRadar" style="height:150px"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 mb-0" style="opacity: 0.9;">
+                                <div class="card-header py-1 small">状态分布 (Status)</div>
+                                <div class="card-body p-1 text-center">
+                                    <div id="statusChart" style="height:150px"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card h-100 mb-0" style="opacity: 0.9;">
+                                <div class="card-header py-1 small">交付账龄 (Aging)</div>
+                                <div class="card-body p-1">
+                                    <div id="agingChart" style="height:150px"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strategic Insights Row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="card h-100 mb-0">
+                                <div class="card-header py-1 small">🧠 智能分析洞察</div>
+                                <div class="card-body p-2">
+                                    <div id="insightsList" class="row g-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100 mb-0">
+                                <div class="card-header py-1 small">负载压力指数</div>
+                                <div class="card-body p-1">
+                                    <div id="workloadChart" style="height:120px"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tasks Log Table -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center py-1">
+                            <span class="small">MISSION_LOGS (任务流水)</span>
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7em"
+                                onclick="loadData()">SYNC_DATA</button>
+                        </div>
+                        <div class="card-body p-1">
+                            <table id="tasksTable" class="table table-hover w-100 mb-0" style="font-size: 0.75em;">
+                                <thead>
+                                    <tr>
+                                        <th>执行人</th>
+                                        <th>任务标题</th>
+                                        <th>状态</th>
+                                        <th>优先级</th>
+                                        <th>截止</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Heroes & Support -->
+                <div class="col-lg-4">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>🏆 英雄殿堂 (Hero Gallery)</span>
+                            <select id="roleFilter"
+                                class="form-select form-select-sm bg-dark text-white border-secondary w-auto"
+                                onchange="applyRoleFilter()">
+                                <option value="all">工作全员</option>
+                            </select>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="heroGallery" class="p-2" style="max-height: 520px; overflow-y: auto;">
+                                <!-- Hero Cards via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">🎯 即将截止</div>
+                        <div class="card-body p-0">
+                            <div id="deadlineList" class="p-2" style="max-height: 180px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">👥 团队配置</div>
+                        <div class="card-body p-0">
+                            <div id="teamList" style="max-height: 250px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JS -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.3/dist/echarts.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+
+        <script>
+            // --- PRO WebGL Animation Logic (Ported from Wiki) ---
+            async function initHeroShader() {
+                const container = document.getElementById('hero-canvas-container');
+                const app = new PIXI.Application({ resizeTo: container, backgroundColor: 0x020406 });
+                container.appendChild(app.view);
+
+                try {
+                    // Load Assets (Using dashboard /images/ path)
+                    const bgTex = await PIXI.Assets.load('/images/launch_bg.jpg');
+                    const depthTex = await PIXI.Assets.load('/images/depth.jpg');
+                    // Title not used in new effect, removed to clean up
+
+                    const bgSprite = new PIXI.Sprite(bgTex);
+
+                    // Liquid Devouring Shader Source
+                    const fragSrc = `
+                        precision mediump float;
+                        varying vec2 vTextureCoord;
+                        uniform sampler2D uSampler;
+                        uniform sampler2D uDepthMap;
+                        uniform float uTime;
+                        uniform vec2 uMouse;
+                        uniform vec2 uResolution;
+                        
+                        // Settings
+                        const vec3 FOG_COLOR = vec3(0.05, 0.0, 0.1); 
+                        const vec3 EDGE_COLOR = vec3(0.2, 0.0, 0.4);
+                        const vec3 GLOW_TARGET_COLOR = vec3(1.0, 1.0, 0.0);
+                        
+                        const float BREATH_SPEED = 1.0;
+                        const float BREATH_AMP = 0.005;
+                        const float DISTORT_STRENGTH = 0.01;
+                        const float DISTORT_SPEED = 0.5;
+                        const float DISTORT_FREQ = 3.0;
+                        const float PARALLAX_STRENGTH = 0.01;
+                        const float LIQUID_FREQ = 15.0;
+                        const float LIQUID_SPEED = 1.0;
+                        const float LIQUID_AMP = 0.03;
+                        const float DEVOUR_PROGRESS = -0.3; // Start clear
+                        const float EDGE_SOFTNESS = 0.1; 
+
+                        float liquidNoise(vec2 uv, float time) {
+                            float wave1 = sin(uv.x * LIQUID_FREQ + time * 0.5);
+                            float wave2 = sin((uv.y + uv.x) * (LIQUID_FREQ * 0.8) - time * 1.2);
+                            float wave3 = cos(uv.y * (LIQUID_FREQ * 1.5) + time);
+                            return (wave1 + wave2 + wave3) * 0.33;
+                        }
+
+                        void main() {
+                            vec2 uv = vTextureCoord;
+                            
+                            // 1. Base Depth & Distortion
+                            float baseDepth = texture2D(uDepthMap, uv).r;
+                            
+                            // Twist/Distortion
+                            vec2 uvToCenter = uv - 0.5;
+                            float distToCenter = length(uvToCenter);
+                            vec2 distortOffset = vec2(0.0);
+                            
+                            if(baseDepth < 0.9) {
+                                float twistTime = uTime * DISTORT_SPEED;
+                                float radialWave = sin(distToCenter * DISTORT_FREQ - twistTime);
+                                distortOffset = normalize(uvToCenter) * radialWave * DISTORT_STRENGTH * (1.0 - baseDepth);
+                            }
+                            vec2 distortedUV = uv + distortOffset;
+                            
+                            // Breathing Zoom
+                            float breathCycle = sin(uTime * BREATH_SPEED);
+                            float currentScale = 1.0 - (breathCycle * BREATH_AMP * baseDepth);
+                            vec2 zoomedUV = (distortedUV - 0.5) * currentScale + 0.5;
+                            
+                            // Parallax
+                            vec2 inputOffset = clamp(uMouse * 1.5, -1.0, 1.0); 
+                            vec2 parallaxOffset = (baseDepth - 0.5) * PARALLAX_STRENGTH * inputOffset;
+                            vec2 finalUV = zoomedUV + parallaxOffset;
+                            
+                            // Safety Clamp
+                            finalUV = clamp(finalUV, 0.002, 0.998);
+                            
+                            // 2. Sample Texture
+                            vec4 col = texture2D(uSampler, finalUV);
+                            float finalDepth = texture2D(uDepthMap, finalUV).r;
+                            
+                            // 3. Liquid Devouring Logic
+                            float time = uTime * LIQUID_SPEED;
+                            float noiseVal = liquidNoise(finalUV, time);
+                            
+                            float dynamicThreshold = DEVOUR_PROGRESS + noiseVal * LIQUID_AMP;
+                            
+                            // Masking 
+                            float mainMask = 1.0 - smoothstep(dynamicThreshold - EDGE_SOFTNESS, dynamicThreshold, finalDepth);
+                            
+                            // Edge Highlight
+                            float edgeMask = smoothstep(dynamicThreshold - EDGE_SOFTNESS, dynamicThreshold, finalDepth) *
+                                             (1.0 - smoothstep(dynamicThreshold, dynamicThreshold + 0.1, finalDepth));
+                                             
+                            // Colors
+                            vec3 sourceRGB = col.rgb;
+                            
+                            // Contrast & Saturation Boost
+                            sourceRGB = (sourceRGB - 0.5) * 1.1 + 0.5;
+                            const vec3 W = vec3(0.2125, 0.7154, 0.0721);
+                            vec3 intensity = vec3(dot(sourceRGB, W));
+                            sourceRGB = mix(intensity, sourceRGB, 1.15);
+                            sourceRGB *= 1.05;
+                            
+                            vec3 finalRGB = mix(sourceRGB, EDGE_COLOR, edgeMask * mainMask * 2.5);
+                            finalRGB = mix(finalRGB, FOG_COLOR, mainMask);
+                            
+                            // 4. Eye Vignette
+                            vec2 dist = abs(finalUV - 0.5) * 2.0;
+                            float vignette = 1.0 - smoothstep(1.2, 2.0, length(dist)); 
+                            finalRGB *= clamp(vignette + 0.4, 0.0, 1.0); 
+                            
+                            // 5. Breathing Glow (HDR)
+                            float emissionFactor = pow((breathCycle + 1.0) * 0.5, 2.0);
+                            float totalGlow = 0.3 + (6.0 * emissionFactor); 
+                            
+                            float colorDist = distance(col.rgb, GLOW_TARGET_COLOR);
+                            float glowMask = 1.0 - smoothstep(0.2, 0.5, colorDist);
+                            
+                            finalRGB += sourceRGB * totalGlow * glowMask * 0.7;
+                            
+                            // 6. Mouse Flashlight
+                            vec2 lightPos = uMouse + 0.5;
+                            // Correct aspect for circular light
+                            float aspect = uResolution.x / uResolution.y;
+                            vec2 aspectUV = finalUV;
+                            aspectUV.x *= aspect;
+                            vec2 aspectLightPos = lightPos;
+                            aspectLightPos.x *= aspect;
+
+                            float distToMouse = distance(aspectUV, aspectLightPos);
+                            
+                            float lightRadius = 0.35; 
+                            float lightFalloff = smoothstep(lightRadius, 0.0, distToMouse);
+                            
+                            vec3 torchColor = vec3(1.0, 0.95, 0.8); 
+                            vec3 litColor = sourceRGB * 0.4 + torchColor * 0.1;
+                            finalRGB += litColor * lightFalloff * 0.7;
+                            
+                            finalRGB = clamp(finalRGB, 0.0, 1.0);
+
+                            gl_FragColor = vec4(finalRGB, 1.0);
+                        }
+                    `;
+
+                    const uniforms = {
+                        uDepthMap: depthTex,
+                        uTime: 0.0,
+                        uMouse: { x: 0, y: 0 },
+                        uResolution: { x: app.screen.width, y: app.screen.height }
+                    };
+
+                    const depthFilter = new PIXI.Filter(null, fragSrc, uniforms);
+
+                    function resize() {
+                        const w = app.screen.width;
+                        const h = app.screen.height;
+                        const scale = Math.max(w / bgTex.width, h / bgTex.height);
+
+                        bgSprite.scale.set(scale);
+                        bgSprite.anchor.set(0.5);
+                        bgSprite.x = w / 2;
+                        bgSprite.y = h / 2;
+
+                        depthFilter.uniforms.uResolution = { x: w, y: h };
+                    }
+
+                    app.stage.addChild(bgSprite);
+                    bgSprite.filters = [depthFilter];
+
+                    window.addEventListener('resize', resize);
+                    resize();
+
+                    let mouseX = 0, mouseY = 0, smoothX = 0, smoothY = 0;
+                    container.addEventListener('mousemove', (e) => {
+                        const rect = container.getBoundingClientRect();
+                        mouseX = (e.clientX - rect.left) / rect.width - 0.5;
+                        mouseY = (e.clientY - rect.top) / rect.height - 0.5;
+                    });
+
+                    // Don't reset on mouseleave to allow flashlight to "hang" there or drift
+
+                    app.ticker.add((delta) => {
+                        const dt = Math.min(delta, 2.0);
+                        // Slower smoothing
+                        smoothX += (mouseX - smoothX) * 0.1 * dt;
+                        smoothY += (mouseY - smoothY) * 0.1 * dt;
+
+                        depthFilter.uniforms.uTime = app.ticker.lastTime / 1000;
+                        depthFilter.uniforms.uMouse = { x: smoothX, y: smoothY };
+                        depthFilter.uniforms.uResolution = { x: app.screen.width, y: app.screen.height };
+                    });
+
+                } catch (e) { console.error("Shader Fail", e); }
+            }
+
+            // --- Data Logic ---
+            let statusChart, agingChart, riskRadar, workloadChart, table;
+            let globalData = null;
+
+            const cleanName = (n) => {
+                if (!n) return '';
+                return n.split('(')[0].split('（')[0].trim();
+            };
+
+            $(document).ready(function () {
+                statusChart = echarts.init(document.getElementById('statusChart'));
+                agingChart = echarts.init(document.getElementById('agingChart'));
+                riskRadar = echarts.init(document.getElementById('riskRadar'));
+                workloadChart = echarts.init(document.getElementById('workloadChart'));
+                table = $('#tasksTable').DataTable({
+                    language: { url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/zh.json' },
+                    order: [[4, 'asc']], pageLength: 25,
+                    dom: '<"d-flex justify-content-between"f>t<"d-flex justify-content-between"ip>'
+                });
+                loadData();
+                initHeroShader();
+
+                // Fix ECharts truncation in Modals
+                document.getElementById('heroModal').addEventListener('shown.bs.modal', function () {
+                    if (heroRadar) heroRadar.resize();
+                });
+            });
+
+            async function loadData() {
+                try {
+                    const resp = await fetch('/api/summary');
+                    const data = await resp.json();
+                    globalData = data;
+
+                    // Create cleaned role map for fuzzy matching
+                    data.clean_user_roles = {};
+                    if (data.user_roles) {
+                        for (let k in data.user_roles) {
+                            data.clean_user_roles[cleanName(k)] = data.user_roles[k];
+                        }
+                    }
+
+                    initRoleFilter(data);
+                    updateMetrics(data);
+                    updateCharts(data);
+                    updateHeroGallery(data);
+                    updateDeadlines(data);
+                    updateTeams(data);
+                    updateTable(data);
+                    updateWinFeed(data);
+                    updateStudioXP(data);
+                } catch (e) { console.error(e); }
+            }
+
+            async function requestUpdate() {
+                const btn = $('#btnUpdate');
+                const original = btn.html();
+                btn.addClass('disabled').html('⏳ 更新中...');
+                try {
+                    const r = await fetch('/api/update', { method: 'POST' });
+                    const d = await r.json();
+                    if (d.status === 'success') await loadData();
+                    else alert(d.message);
+                } catch (e) { alert('Error'); }
+                finally { btn.removeClass('disabled').html(original); }
+            }
+
+            function initRoleFilter(data) {
+                const roles = new Set(Object.values(data.user_roles || {}));
+                const sel = $('#roleFilter'); const cur = sel.val();
+                sel.find('option:not([value="all"])').remove();
+                roles.forEach(r => { if (r) sel.append(`<option value="${r}">${r}</option>`); });
+                sel.append(`<option value="other">美术</option>`);
+                if (cur) sel.val(cur);
+            }
+            function applyRoleFilter() { updateHeroGallery(globalData); }
+            function isActive(s) {
+                if (isDone(s)) return false;
+                const activeSet = ['进行中', 'In Progress', 'Doing', 'Working'];
+                return activeSet.includes(s) || (s.includes('中') && !s.includes('待') && !s.includes('评审') && !s.includes('测试'));
+            }
+            function isBacklog(s) {
+                return s.includes('待处理') || s.includes('待接收') || s.includes('待评审') || s.includes('待发布') || s.includes('待测试');
+            }
+            function isDone(s) {
+                const doneSet = [
+                    '已完成', '关闭', 'Done', 'Closed', 'Resolved', '已关闭', '已发布', 'Released', 'Finished',
+                    '待验收', '待测试', '待评审', '待发布',
+                    '验收中', '评审中', '测完', '测试中',
+                    '测试完成', '制作完成'
+                ];
+                if (s.includes('待处理') || s.includes('待接收')) return false;
+                return doneSet.includes(s) || (s.includes('已') && !s.includes('进行') && !s.includes('待')) || s.includes('Done') || (s.includes('验收') && s.includes('中'));
+            }
+            function flattenTasks(data) {
+                let t = []; const bu = data.by_user || {};
+                for (let u in bu) bu[u].tasks.forEach(x => { x.executor = u; t.push(x) });
+                return t;
+            }
+
+            function updateMetrics(data) {
+                const all = flattenTasks(data);
+                $('#totalTasks').text(data.total_tasks || 0);
+
+                let i = 0, d = 0, o = 0, totalPressure = 0;
+                all.forEach(t => {
+                    if (isActive(t.status)) {
+                        i++;
+                        // Calculate Pressure Score
+                        let p = 1; // Normal
+                        const priority = t.priority || '';
+                        if (priority.includes('紧急') || priority.includes('Urgent')) p = 5;
+                        else if (priority.includes('高') || priority.includes('High')) p = 3;
+                        if (t.is_overdue) p += 2;
+                        totalPressure += p;
+                    }
+                    if (isDone(t.status)) d++;
+                    if (t.is_overdue) o++;
+                });
+
+                $('#inprogressTasks').text(i);
+                $('#doneTasks').text(d);
+                $('#overdueTasks').text(o);
+
+                const avgP = i > 0 ? (totalPressure / i).toFixed(1) : 0;
+                $('#avgPressure').text(avgP);
+
+                // Health Score calculation
+                const overdueRate = i > 0 ? (o / i) : 0;
+                const health = Math.max(0, 100 - (overdueRate * 150) - (avgP * 5));
+                $('#healthScore').text(Math.round(health) + '%');
+
+                const healthColor = health > 80 ? 'var(--accent-glow)' : (health > 50 ? '#f1c40f' : 'var(--accent-red)');
+                $('#healthScore').css('color', healthColor);
+            }
+
+            function updateCharts(data) {
+                const all = flattenTasks(data);
+                const sc = {}; all.forEach(t => { let s = '未知'; if (isActive(t.status)) s = '进行中'; else if (isDone(t.status)) s = '已完成'; else if (t.is_overdue) s = '已逾期'; else s = t.status; sc[s] = (sc[s] || 0) + 1; });
+                statusChart.setOption({
+                    tooltip: {
+                        trigger: 'item',
+                        backgroundColor: 'rgba(50, 50, 50, 0.95)',
+                        borderColor: '#20c284',
+                        textStyle: { color: '#fff' }
+                    },
+                    color: ['#20c284', '#666', '#c0392b', '#8e44ad'],
+                    series: [{ type: 'pie', radius: ['40%', '70%'], itemStyle: { borderColor: '#111', borderWidth: 2 }, label: { color: '#ccc' }, data: Object.keys(sc).map(k => ({ value: sc[k], name: k })) }]
+                });
+
+                // Aging Chart
+                const aging = { '0-3天': 0, '4-7天': 0, '8-14天': 0, '15天+': 0 };
+                all.filter(t => isActive(t.status)).forEach(t => {
+                    const age = t.age_days || 0;
+                    if (age <= 3) aging['0-3天']++;
+                    else if (age <= 7) aging['4-7天']++;
+                    else if (age <= 14) aging['8-14天']++;
+                    else aging['15天+']++;
+                });
+
+                agingChart.setOption({
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                    xAxis: { type: 'value', axisLabel: { color: '#ccc' }, splitLine: { lineStyle: { color: '#333' } } },
+                    yAxis: { type: 'category', data: Object.keys(aging), axisLabel: { color: '#ccc' } },
+                    series: [{
+                        name: '任务数',
+                        type: 'bar',
+                        data: Object.values(aging).map((v, idx) => ({
+                            value: v,
+                            itemStyle: { color: idx === 3 ? 'var(--accent-red)' : (idx === 0 ? 'var(--accent-green)' : '#f1c40f') }
+                        }))
+                    }]
+                });
+
+                // Risk Radar Chart
+                updateRiskRadar(data);
+
+                const bu = data.by_user || {};
+                const ud = [];
+                for (let u in bu) {
+                    let pressure = 0;
+                    let activeTasks = bu[u].tasks.filter(t => isActive(t.status));
+                    activeTasks.forEach(t => {
+                        let p = 1;
+                        const priority = t.priority || '';
+                        if (priority.includes('紧急') || priority.includes('Urgent')) p = 5;
+                        else if (priority.includes('高') || priority.includes('High')) p = 3;
+                        if (t.is_overdue) p += 2;
+                        pressure += p;
+                    });
+                    if (pressure > 0) ud.push({ name: u, value: pressure, count: activeTasks.length });
+                }
+                ud.sort((a, b) => b.value - a.value);
+
+                workloadChart.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: '{b}: 压力值 {c}<br/>任务数 {a}',
+                        backgroundColor: 'rgba(50, 50, 50, 0.95)',
+                        borderColor: '#20c284',
+                        textStyle: { color: '#fff' }
+                    },
+                    grid: { containLabel: true, bottom: 20 },
+                    xAxis: { type: 'category', data: ud.map(u => u.name), axisLabel: { color: '#ccc', rotate: 30 } },
+                    yAxis: { type: 'value', name: '压力评分', axisLabel: { color: '#ccc' } },
+                    series: [{
+                        type: 'bar',
+                        data: ud.map(u => u.value),
+                        itemStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: '#38ef7d' },
+                                { offset: 1, color: '#11998e' }
+                            ])
+                        },
+                        emphasis: { itemStyle: { color: '#38ef7d' } }
+                    }]
+                });
+
+                updateInsights(ud, all);
+            }
+
+            function updateInsights(userData, allTasks) {
+                const list = $('#insightsList'); list.empty();
+                const insights = [];
+
+                // 1. Bottleneck check
+                const maxPressure = userData.length > 0 ? userData[0] : null;
+                if (maxPressure && maxPressure.value > 10) {
+                    insights.push({ title: '资源瓶颈', text: `${maxPressure.name} 压力过载 (分值:${maxPressure.value})`, type: 'danger', icon: '🔥' });
+                }
+
+                // 2. Overdue risk
+                const overdue = allTasks.filter(t => t.is_overdue && isActive(t.status));
+                if (overdue.length > 3) {
+                    insights.push({ title: '逾期风险', text: `当前有 ${overdue.length} 项任务逾期未关`, type: 'warning', icon: '⚠️' });
+                }
+
+                // 3. Stuck tasks
+                const stuck = allTasks.filter(t => (t.age_days || 0) > 10 && isActive(t.status));
+                if (stuck.length > 0) {
+                    insights.push({ title: '沉淀任务', text: `发现 ${stuck.length} 项任务已在进行中停留超10天`, type: 'danger', icon: '🧊' });
+                }
+
+                // 4. Efficiency boost
+                const pending = allTasks.filter(t => t.status.includes('待处理') || t.status.includes('未开始'));
+                if (pending.length > 10) {
+                    insights.push({ title: '积压告警', text: `积压 ${pending.length} 项未启动任务`, type: 'info', icon: '📥' });
+                }
+
+                // 5. Direct Management suggestion
+                if (stuck.length > 0 || overdue.length > 5) {
+                    const worstRole = userData.length > 0 ? userData[0].name : '未知';
+                    insights.push({ title: '管理建议', text: `建议约谈 ${worstRole} 协调进度，并清理积压任务`, type: 'primary', icon: '💡' });
+                } else {
+                    insights.push({ title: '团队活跃', text: `当前整体协作效率较高，继续保持`, type: 'success', icon: '🚀' });
+                }
+
+                insights.forEach(ins => {
+                    const borderClass = `border-${ins.type}`;
+                    const bgClass = ins.type === 'primary' ? 'rgba(52, 152, 219, 0.1)' : 'rgba(0,0,0,0.2)';
+                    list.append(`
+                    <div class="col-md-6 mb-2">
+                        <div class="p-2 border ${borderClass} rounded" style="background: ${bgClass}">
+                            <div class="d-flex align-items-center">
+                                <span class="me-2 h4 mb-0">${ins.icon}</span>
+                                <div>
+                                    <div class="fw-bold small text-${ins.type}">${ins.title}</div>
+                                    <div class="text-muted" style="font-size:0.75em">${ins.text}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                });
+            }
+
+            function updateRiskRadar(data) {
+                const all = flattenTasks(data).filter(t => isActive(t.status));
+                const roles = data.user_roles || {};
+                const roleData = {}; // { role: { count, pressure, overdue, aging } }
+
+                all.forEach(t => {
+                    const r = roles[t.executor] || '美术';
+                    if (!roleData[r]) roleData[r] = { count: 0, pressure: 0, overdue: 0, aging: 0 };
+
+                    roleData[r].count++;
+                    if (t.is_overdue) roleData[r].overdue++;
+                    roleData[r].aging += (t.age_days || 0);
+
+                    let p = 1;
+                    const priority = t.priority || '';
+                    if (priority.includes('紧急') || priority.includes('Urgent')) p = 5;
+                    else if (priority.includes('高') || priority.includes('High')) p = 3;
+                    roleData[r].pressure += p;
+                });
+
+                const roleNames = Object.keys(roleData);
+                if (roleNames.length === 0) return;
+
+                // Normalize and group
+                const indicators = [
+                    { name: '任务密度', max: 25 },
+                    { name: '平均压力', max: 6 },
+                    { name: '逾期风险 (x10)', max: 10 },
+                    { name: '交付沉淀 (天)', max: 20 }
+                ];
+
+                const seriesData = roleNames.map(r => {
+                    const d = roleData[r];
+                    const count = d.count || 1; // Avoid division by zero
+                    return {
+                        name: r,
+                        value: [
+                            d.count,
+                            Number((d.pressure / count).toFixed(1)),
+                            Number(((d.overdue / count) * 10).toFixed(1)),
+                            Number((d.aging / count).toFixed(1))
+                        ]
+                    };
+                });
+
+                riskRadar.setOption({
+                    tooltip: { trigger: 'item', backgroundColor: 'rgba(30,30,30,0.9)', borderColor: 'var(--accent-glow)' },
+                    legend: {
+                        orient: 'vertical', right: 10, top: 'center',
+                        textStyle: { color: '#ccc', fontSize: 10 },
+                        itemWidth: 12, itemHeight: 12
+                    },
+                    radar: {
+                        indicator: indicators,
+                        center: ['40%', '50%'],
+                        radius: '65%',
+                        axisName: { color: 'var(--text-muted)', fontSize: 11 },
+                        splitLine: { lineStyle: { color: 'rgba(32, 194, 132, 0.2)' } },
+                        splitArea: { show: true, areaStyle: { color: ['rgba(255,255,255,0.02)', 'rgba(0,0,0,0.1)'] } },
+                        axisLine: { lineStyle: { color: 'rgba(32, 194, 132, 0.3)' } }
+                    },
+                    series: [{
+                        type: 'radar',
+                        data: seriesData,
+                        symbolSize: 6,
+                        itemStyle: { opacity: 0.8 },
+                        areaStyle: { opacity: 0.2 }
+                    }]
+                });
+            }
+
+            function updateHeroGallery(data) {
+                const container = $('#heroGallery'); container.empty();
+                const filter = $('#roleFilter').val();
+                const roles = data.user_roles || {};
+                const cleanRoles = data.clean_user_roles || {};
+                const byUser = data.by_user || {};
+
+                let users = Object.keys(byUser).sort();
+                if (filter && filter !== 'all') {
+                    users = users.filter(u => {
+                        const r = cleanRoles[cleanName(u)] || 'other';
+                        return filter === 'other' ? r === 'other' : r === filter;
+                    });
+                }
+
+                users.forEach(u => {
+                    const ts = byUser[u].tasks;
+                    const stats = byUser[u].stats || {};
+                    const displayName = cleanName(u);
+                    const activeT = ts.filter(t => isActive(t.status));
+                    // const doneT = ts.filter(t => isDone(t.status)); // Deprecated for stats
+
+                    // Calc historical wins
+                    const globalWins = data.recent_wins || [];
+                    const userWins = globalWins.filter(w => cleanName(w.user) === displayName);
+                    const doneCount = userWins.length;
+
+                    // Inject into stats so getHeroTitles uses the full historical count
+                    stats.done_count = doneCount;
+
+                    const p = stats.active_pressure || 0;
+
+                    // Use the standardized Title Engine
+                    const titles = getHeroTitles(byUser[u], stats, displayName, cleanRoles);
+                    const topTitle = titles.length > 0 ? titles[titles.length - 1] : { name: "待激活", color: "#666", rarity: "" };
+
+                    const pressurePercent = Math.min(100, (p / 15) * 100);
+                    const pressureColor = p > 10 ? 'var(--accent-red)' : (p > 5 ? '#f1c40f' : 'var(--accent-green)');
+
+                    container.append(`
+                    <div class="hero-item p-2 mb-2 rounded border border-secondary" style="background: rgba(0,0,0,0.2)" onclick="showHeroProfile('${u}')">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold me-2" style="font-size: 0.95rem;">${displayName}</span>
+                                    <span class="small text-muted" style="font-size: 0.7em;">[${cleanRoles[displayName] || '美术'}]</span>
+                                </div>
+                                <div class="mt-1 d-flex flex-wrap gap-1">
+                                    <span class="badge rounded-pill border x-small p-1 px-2" 
+                                          style="color:${topTitle.color}; border-color:${topTitle.color}33; background: ${topTitle.color}11">
+                                          ${topTitle.name}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small fw-bold text-success" style="font-size:0.7em">${doneCount} 已完成</div>
+                                <div class="small text-warning" style="font-size:0.7em">${activeT.length} 进行中</div>
+                            </div>
+                        </div>
+                        <div class="mt-2" title="Load Pressure Index: ${p}">
+                            <div class="progress" style="height: 3px; background: #111;">
+                                <div class="progress-bar" style="width: ${pressurePercent}%; background: ${pressureColor}; box-shadow: 0 0 5px ${pressureColor}"></div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                });
+                if (users.length === 0) container.append('<div class="text-center py-4 text-muted">目前无活跃英雄</div>');
+            }
+
+            let heroRadar = null;
+
+            // --- 称号系统（严格基于实际数据）---
+            const TITLE_LIBRARY = {
+                productivity: { // 基于完成任务数
+                    tiers: [3, 8, 15, 30, 50, 80, 120],
+                    names: [
+                        { name: "新手上路", color: "#95a5a6", rarity: "普通" },
+                        { name: "坚定者", color: "#7f8c8d", rarity: "普通" },
+                        { name: "战地精英", color: "#2ecc71", rarity: "稀有" },
+                        { name: "任务大师", color: "#3498db", rarity: "史诗" },
+                        { name: "产能传说", color: "#9b59b6", rarity: "传说" },
+                        { name: "交付之王", color: "#f1c40f", rarity: "神话" },
+                        { name: "万象之神", color: "#e74c3c", rarity: "至尊" }
+                    ]
+                },
+                bugs: { // 基于修复 BUG 数
+                    tiers: [2, 5, 10, 20, 40, 80],
+                    names: [
+                        { name: "巡查哨兵", color: "#ecf0f1", rarity: "普通" },
+                        { name: "缺陷猎人", color: "#27ae60", rarity: "稀有" },
+                        { name: "BUG终结者", color: "#8e44ad", rarity: "史诗" },
+                        { name: "品质守护者", color: "#3498db", rarity: "传说" },
+                        { name: "消灭之炎", color: "#f39c12", rarity: "神话" },
+                        { name: "完美缔造者", color: "#e74c3c", rarity: "至尊" }
+                    ]
+                },
+                speed: { // 基于平均交付天数（越快越强，需要完成>=5个任务才评定）
+                    tiers: [12, 8, 5, 3, 2, 1],
+                    names: [
+                        { name: "稳健节奏", color: "#7f8c8d", rarity: "普通" },
+                        { name: "简捷先锋", color: "#27ae60", rarity: "稀有" },
+                        { name: "极速冲锋", color: "#3498db", rarity: "史诗" },
+                        { name: "闪电掌控者", color: "#9b59b6", rarity: "传说" },
+                        { name: "光速法则", color: "#f1c40f", rarity: "神话" },
+                        { name: "时空主宰", color: "#e74c3c", rarity: "至尊" }
+                    ]
+                },
+                resilience: { // 基于完成的紧急任务数
+                    tiers: [2, 4, 8, 15, 25, 50],
+                    names: [
+                        { name: "急救响应", color: "#95a5a6", rarity: "普通" },
+                        { name: "危机猎人", color: "#e67e22", rarity: "稀有" },
+                        { name: "钢铁意志", color: "#d35400", rarity: "史诗" },
+                        { name: "风暴之心", color: "#c0392b", rarity: "传说" },
+                        { name: "后盾之盾", color: "#f1c40f", rarity: "神话" },
+                        { name: "不灭堡垒", color: "#e74c3c", rarity: "至尊" }
+                    ]
+                }
+                // 已移除 traits 特质系统，避免根据任务标题关键词误判
+            };
+
+            const rarityWeight = { "至尊": 100, "神话": 90, "传说": 80, "史诗": 60, "英雄": 40, "精英": 20, "职业": 30, "凡人": 10, "特质": 15 };
+
+            function getHeroTitles(uData, stats, displayName, cleanRoles) {
+                const titles = [];
+                const allT = uData.tasks || [];
+                const doneT = allT.filter(t => isDone(t.status));
+                // Use stats.done_count (historical) if available, otherwise fallback to current task count
+                const doneCount = (stats && stats.done_count) ? Number(stats.done_count) : doneT.length;
+                const bugDone = Number(stats.bug_done) || 0;
+                const urgentDone = Number(stats.urgent_done) || 0;
+                const avgAge = Number(stats.avg_age_done) || 0;
+
+                // 1. 产能成就 - 只有完成任务数 >= 1 才给称号
+                if (doneCount >= 1) {
+                    for (let i = TITLE_LIBRARY.productivity.tiers.length - 1; i >= 0; i--) {
+                        if (doneCount >= TITLE_LIBRARY.productivity.tiers[i]) {
+                            titles.push(TITLE_LIBRARY.productivity.names[i]); break;
+                        }
+                    }
+                }
+
+                // 2. BUG成就 - 只有修复BUG数 >= 2 才给称号（与tiers配置对齐）
+                if (bugDone >= 2) {
+                    for (let i = TITLE_LIBRARY.bugs.tiers.length - 1; i >= 0; i--) {
+                        if (bugDone >= TITLE_LIBRARY.bugs.tiers[i]) {
+                            titles.push(TITLE_LIBRARY.bugs.names[i]); break;
+                        }
+                    }
+                }
+
+                // 3. 速度成就 - 只有完成>=5个任务且平均账龄>0才评定交付速度
+                if (doneCount >= 5 && avgAge > 0) {
+                    for (let i = TITLE_LIBRARY.speed.tiers.length - 1; i >= 0; i--) {
+                        if (avgAge <= TITLE_LIBRARY.speed.tiers[i]) {
+                            titles.push(TITLE_LIBRARY.speed.names[i]); break;
+                        }
+                    }
+                }
+
+                // 4. 韧性成就 - 只有完成紧急任务数 >= 2 才给称号（与tiers配置对齐）
+                if (urgentDone >= 2) {
+                    for (let i = TITLE_LIBRARY.resilience.tiers.length - 1; i >= 0; i--) {
+                        if (urgentDone >= TITLE_LIBRARY.resilience.tiers[i]) {
+                            titles.push(TITLE_LIBRARY.resilience.names[i]); break;
+                        }
+                    }
+                }
+
+                // 5. 职业底色 - 只有在config中配置了角色且完成过任务才显示
+                if (doneCount >= 1) {
+                    const role = cleanRoles[displayName] || '';
+                    if (role.includes('程序') || role.includes('客户端') || role.includes('服务端')) {
+                        titles.push({ name: "代码锻造师", color: "#3498db", rarity: "职业" });
+                    } else if (role.includes('美术') || role.includes('UI')) {
+                        titles.push({ name: "幻象绘师", color: "#e84393", rarity: "职业" });
+                    } else if (role.includes('策划')) {
+                        titles.push({ name: "世界设计师", color: "#1abc9c", rarity: "职业" });
+                    } else if (role.includes('测试')) {
+                        titles.push({ name: "漏洞猎手", color: "#f39c12", rarity: "职业" });
+                    }
+                }
+
+                // 已移除特质系统，避免根据任务标题关键词误判
+
+                // Final Clean: Unique by name and Sort by rarity weight, max 5 total
+                const finalTitles = [];
+                const seen = new Set();
+
+                // Sort by rarity weight descending
+                titles.sort((a, b) => (rarityWeight[b.rarity] || 0) - (rarityWeight[a.rarity] || 0));
+
+                for (let t of titles) {
+                    if (!seen.has(t.name)) {
+                        finalTitles.push(t);
+                        seen.add(t.name);
+                    }
+                    if (finalTitles.length >= 5) break;
+                }
+
+                return finalTitles;
+            }
+
+            function showHeroProfile(name) {
+                const uData = globalData.by_user[name];
+                if (!uData) return;
+                const stats = uData.stats || {};
+                const roles = globalData.user_roles || {};
+                const cleanRoles = globalData.clean_user_roles || {};
+                const displayName = cleanName(name);
+
+                // 1. Get Full Historical Wins (The Source of Truth)
+                const globalWins = globalData.recent_wins || [];
+                const userWins = globalWins.filter(w => cleanName(w.user) === displayName);
+                // Sort by date descending
+                userWins.sort((a, b) => new Date(b.done_at) - new Date(a.done_at));
+
+                // 2. Calculate Stats from History
+                const doneCount = userWins.length;
+                const bugDone = userWins.filter(w => w.is_bug).length;
+
+                // Fallback for stats not in recent_wins (like urgency/pressure)
+                const urgentDone = Number(stats.urgent_done) || 0;
+                const avgAge = Number(stats.avg_age_done) || 0;
+                const activeP = Number(stats.active_pressure) || 0;
+
+                // Dim values for radar (0-100)
+                const vigor = Math.min(100, doneCount * 5);
+                const precision = Math.min(100, (doneCount > 0 ? (bugDone / doneCount) : 0) * 200);
+                const resilience = Math.min(100, urgentDone * 20);
+                const pace = Math.max(20, 100 - (avgAge * 2));
+                const dedication = Math.min(100, activeP * 4);
+
+                const allT = uData.tasks || [];
+                // doneT is now only used for urgency calculation if needed, but we rely on stats for that.
+                // We keep activeT/backlogT for the other lists
+                const activeT = allT.filter(t => isActive(t.status));
+                const backlogT = allT.filter(t => isBacklog(t.status));
+
+                // const isBug = (t) => t.is_bug || /bug|缺陷|报错|异常|【bug】|\[bug\]/i.test(t.title);
+                // const isUrgent = (t) => /最高|紧急|高|Urgent|High/i.test(t.priority);
+
+                $('#heroNameLarge').text(displayName);
+                $('#heroRoleText').text(cleanRoles[displayName] || '协作成员');
+
+                // Update Stats Display with Historical Data
+                $('#statDone').text(doneCount);
+                $('#statActive').text(activeT.length);
+                $('#statBug').text(bugDone);
+                $('#statUrgency').text(urgentDone); // Keep urgency from stored stats for now
+
+                const titlesDiv = $('#heroTitlesLarge').empty();
+                const ornamentsDiv = $('#heroAvatarOrnaments').empty();
+
+                const titles = getHeroTitles(uData, stats, displayName, cleanRoles);
+                titles.forEach(t => {
+                    const rarityTag = t.rarity ? `<small style="opacity:0.6; font-size:0.5rem; margin-right:4px;">${t.rarity}</small>` : '';
+                    titlesDiv.append(`<span class="badge rounded-pill border x-small p-2" style="color:${t.color}; border-color:${t.color}66; background: ${t.color}11; box-shadow: 0 0 5px ${t.color}33">${rarityTag}${t.name}</span>`);
+
+                    // Trigger ornaments based on title names or rarities
+                    if (t.name === "造物之主" || t.name === "虚空主宰") ornamentsDiv.append('<div class="hero-ornament crown">👑</div>');
+                    if (t.name === "混沌净化者" || t.name === "灭虫专家") ornamentsDiv.append('<div class="hero-ornament shield">🛡️</div>');
+                    if (t.name === "凤凰涅槃" || t.name === "末日救世主") ornamentsDiv.append('<div class="hero-ornament fire">🔥</div>');
+                    if (t.rarity === "神话" || t.rarity === "至尊") ornamentsDiv.append('<div class="hero-ornament aura"></div>');
+                });
+
+                // Sort active tasks by priority
+                const prioMap = { '最高': 0, '紧急': 1, '高': 2, '普通': 3, '中': 3, '低': 4, '最低': 5 };
+                activeT.sort((a, b) => (prioMap[a.priority] || 9) - (prioMap[b.priority] || 9));
+
+                const activeDiv = $('#heroActiveTasks').empty();
+                activeT.forEach(t => {
+                    const pColor = (t.priority.includes('高') || t.priority.includes('紧') || t.priority.includes('最')) ? '#ff4d4f' : '#888';
+                    const taskLink = t.id ? `https://www.teambition.com/task/${t.id}` : '#';
+                    activeDiv.append(`
+                        <div class="d-flex align-items-center mb-1 pb-1" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <span class="badge me-2" style="background:${pColor}22; color:${pColor}; border: 1px solid ${pColor}44; font-size:0.65rem;">${t.priority}</span>
+                            <a href="${taskLink}" target="_blank" class="text-white-50 text-truncate text-decoration-none hover-link" style="font-size:0.8rem; flex:1;">${t.title}</a>
+                        </div>
+                    `);
+                });
+                if (activeT.length === 0) activeDiv.append('<div class="text-muted small">暂无执行中任务</div>');
+
+                const backlogDiv = $('#heroBacklogTasks').empty();
+                backlogT.forEach(t => {
+                    const taskLink = t.id ? `https://www.teambition.com/task/${t.id}` : '#';
+                    backlogDiv.append(`
+                        <div class="d-flex align-items-center mb-1 pb-1" style="border-bottom: 1px solid rgba(255,255,255,0.05); opacity:0.6;">
+                            <span class="badge me-2" style="background:#444; color:#aaa; border: 1px solid #555; font-size:0.65rem;">${t.status}</span>
+                            <a href="${taskLink}" target="_blank" class="text-muted text-truncate text-decoration-none hover-link" style="font-size:0.8rem; flex:1;">${t.title}</a>
+                        </div>
+                    `);
+                });
+                if (backlogT.length === 0) backlogDiv.append('<div class="text-muted small">队列中暂无待命任务</div>');
+
+
+                const level = Math.floor(Math.sqrt(doneCount * 10)) + 1;
+                $('#heroLevelTag').text(`LV.${level}`);
+
+                let intro = "这是一位低调的开发专家。";
+                const maxStat = Math.max(vigor, precision, resilience, pace, dedication);
+                if (vigor > 0 && maxStat === vigor) intro = "他在战场上如永动机般不知倦怠，完成任务是他的唯一乐趣。";
+                else if (precision > 0 && maxStat === precision) intro = "作为 Bug 的终结者，他的代码中不容许任何逻辑漏洞。";
+                else if (resilience > 0 && maxStat === resilience) intro = "每当紧急时刻来临，他总是那个出现在最前线的救火队长。";
+                else if (pace > 0 && maxStat === pace) intro = "精准的节奏把控者，总能在规定的时间内优雅地交付神作。";
+                else if (dedication > 0 && maxStat === dedication) intro = "工作室最稳健的基石，承载着所有人信任的重量。";
+
+                $('.hero-intro').remove();
+                $('#heroBattleHistory').before(`<div class="hero-intro mb-3 p-2 rounded italic small" style="background:rgba(255,255,255,0.03); border-left: 2px solid #555; font-style: italic; color:#aaa;">"${intro}"</div>`);
+
+                // Battle History (Source from Global Stats for full historical credit)
+                const historyDiv = $('#heroBattleHistory').empty();
+                // globalWins and userWins already computed at top of function
+
+                userWins.forEach(t => {
+                    const taskLink = t.id ? `https://www.teambition.com/task/${t.id}` : '#';
+                    const trigger = t.status_trigger ? `<span class="badge rounded-pill bg-dark border border-secondary text-muted ms-1" style="font-size:0.6em">${t.status_trigger}</span>` : '';
+
+                    historyDiv.append(`
+                        <div class="mb-1 text-muted border-bottom border-dark pb-1" style="font-size:0.8rem;">
+                            <a href="${taskLink}" target="_blank" class="text-muted text-decoration-none hover-link">
+                                <span class="text-success me-1">WIN</span>${t.title}
+                            </a>
+                        </div>
+                    `);
+                });
+
+                if (!heroRadar) heroRadar = echarts.init(document.getElementById('heroRadarChart'));
+
+                heroRadar.setOption({
+                    radar: {
+                        indicator: [
+                            { name: '活力', max: 100 },
+                            { name: '战力', max: 100 },
+                            { name: '节奏', max: 100 },
+                            { name: '韧性', max: 100 },
+                            { name: '精准', max: 100 }
+                        ],
+                        radius: '55%',
+                        center: ['50%', '50%'],
+                        splitArea: { show: false },
+                        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                        axisName: { color: '#888', fontSize: 11 }
+                    },
+                    series: [{
+                        type: 'radar',
+                        data: [{
+                            value: [vigor, dedication, pace, resilience, precision],
+                            name: '属性值',
+                            areaStyle: { color: 'rgba(32, 194, 132, 0.4)' },
+                            lineStyle: { color: 'var(--accent-glow)', width: 2 },
+                            itemStyle: { color: 'var(--accent-glow)' }
+                        }]
+                    }]
+                });
+
+                $('#heroModal').modal('show');
+            }
+
+            function updateWinFeed(data) {
+                const feed = $('#winFeed');
+                const wins = data.recent_wins || [];
+                if (wins.length === 0) return;
+
+                feed.empty();
+                const verbs = [
+                    { t: "击败了怪兽", c: "text-success" },
+                    { t: "斩获了战果", c: "text-info" },
+                    { t: "攻克了难关", c: "text-warning" },
+                    { t: "交付了神作", c: "text-primary" },
+                    { t: "终结了Bug", c: "text-danger" }
+                ];
+
+                let lastDate = "";
+                [...wins].forEach((win, idx) => {
+                    const verb = verbs[idx % verbs.length];
+                    const typeIcon = win.is_bug ? "🐛" : "💎";
+                    const displayName = cleanName(win.user);
+                    const doneDate = (win.done_at || "").split(' ')[0] || "未知日期";
+
+                    if (doneDate !== lastDate) {
+                        feed.append(`
+                            <div class="date-header mt-4 mb-2 d-flex align-items-center">
+                                <span class="badge bg-dark border border-secondary text-muted px-3">${doneDate}</span>
+                                <div class="flex-grow-1 ms-3" style="height:1px; background:linear-gradient(90deg, #333, transparent)"></div>
+                            </div>
+                        `);
+                        lastDate = doneDate;
+                    }
+
+                    feed.append(`
+                    <div class="recent-win-item d-flex align-items-center py-2 px-3 mb-2 border-0 rounded" 
+                         style="background: rgba(255,255,255,0.03); border-left: 4px solid var(--accent-glow) !important;">
+                        <div class="me-3 fs-3">${typeIcon}</div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold" style="color:var(--accent-glow); font-size:1.1rem;">${displayName}</span>
+                                <span class="small text-muted" style="font-family: monospace; font-size:0.65em;">MISSION_COMPLETE</span>
+                            </div>
+                            <div class="mt-0">
+                                <span class="${verb.c} fw-bold small">${verb.t}:</span> 
+                                <span class="ms-1 text-light small">${win.title}</span>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                });
+            }
+
+            function updateStudioXP(data) {
+                const prog = data.project_progress || { done: 0, total: 0, percent: 0 };
+                $('#xpPercent').text(prog.percent + '%');
+                $('#xpRaw').text(`${prog.done} / ${prog.total} TASKS COMPLETED`);
+                $('#xpBar').css('width', prog.percent + '%');
+            }
+
+            function updateDeadlines(data) {
+                const div = $('#deadlineList'); div.empty();
+                const all = flattenTasks(data).filter(t => isActive(t.status) || t.is_overdue);
+                all.sort((a, b) => new Date(a.due || '2099') - new Date(b.due || '2099'));
+                let c = 0; const now = new Date(); const lim = new Date(); lim.setDate(now.getDate() + 5);
+                all.forEach(t => {
+                    if (!t.due) return; const d = new Date(t.due); if (d < lim) {
+                        c++; const o = d < now; const cl = o ? 'text-danger' : 'text-warning';
+                        const ti = t.id ? `<a href="https://www.teambition.com/task/${t.id}" target="_blank" class="${cl} text-decoration-none">${t.title}</a>` : t.title;
+                        div.append(`<div class="border-bottom border-secondary mb-2 pb-2"><div class="d-flex justify-content-between"><span class="${cl} fw-bold">${t.due.substring(5, 10)}</span><small class="text-muted">${t.executor}</small></div><div class="text-truncate">${ti}</div></div>`);
+                    }
+                });
+                if (c === 0) div.append('<div class="text-center text-muted p-3">无近期截止任务</div>');
+            }
+
+            function updateTable(data) {
+                const r = flattenTasks(data).map(t => {
+                    let b = isActive(t.status) ? 'bg-warning' : (isDone(t.status) ? 'bg-success' : 'bg-secondary'); if (t.is_overdue) b = 'bg-danger';
+                    const ti = t.id ? `<a href="https://www.teambition.com/task/${t.id}" target="_blank" class="text-decoration-none text-light">${t.title}</a>` : t.title;
+                    return [t.executor, ti, `<span class="badge ${b}">${t.status}</span>`, t.priority || '-', t.due ? t.due.substring(0, 10) : '-'];
+                });
+                table.clear().rows.add(r).draw();
+            }
+
+            function updateTeams(data) {
+                const div = $('#teamList').empty();
+                const teams = data.teams || {};
+
+                const teamIcons = {
+                    '怪物组': '🛡️', '场景组': '🏞️', '技能组': '⚔️',
+                    '表现组': '✨', '音效组': '🎵', '业务组': '💼'
+                };
+
+                const teamGlows = {
+                    '怪物组': '#e67e22', '场景组': '#2ecc71', '技能组': '#e74c3c',
+                    '表现组': '#9b59b6', '音效组': '#3498db', '业务组': '#f1c40f'
+                };
+
+                // Helper to clean name like "Name(Note)"
+                const cleanName = (n) => n.split('(')[0].split('（')[0].trim();
+
+                const teamOrder = ['怪物组', '场景组', '技能组', '表现组', '音效组', '业务组'];
+                const sortedKeys = Object.keys(teams).sort((a, b) => {
+                    let ia = teamOrder.indexOf(a), ib = teamOrder.indexOf(b);
+                    if (ia === -1) ia = 99; if (ib === -1) ib = 99;
+                    return ia - ib;
+                });
+
+                sortedKeys.forEach(name => {
+                    const t = teams[name];
+                    const icon = teamIcons[name] || '👥';
+                    const glow = teamGlows[name] || 'var(--accent-glow)';
+
+                    const assistants = (t.assistants || []).map(cleanName).join(' · ') || 'None';
+
+                    div.append(`
+                        <div class="squad-card" style="border-left-color: ${glow} !important;">
+                            <style>.squad-card:nth-last-child(1) { margin-bottom: 0; }</style>
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="squad-icon" style="text-shadow: 0 0 10px ${glow}">${icon}</div>
+                                <div class="fw-bold fs-5" style="color:${glow}">${name}</div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="squad-role-tag">Client Lead</div>
+                                    <div class="squad-member-name">${cleanName(t.client_lead || '-')}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="squad-role-tag">Server Lead</div>
+                                    <div class="squad-member-name">${cleanName(t.server_lead || '-')}</div>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-truncate">
+                                <div class="squad-role-tag">Assistants / Squad Members</div>
+                                <div class="small text-light" style="font-size: 0.8em;">${assistants}</div>
+                            </div>
+                            ${t.notes ? `<div class="squad-footer"><i class="bi bi-info-circle me-1"></i>${t.notes}</div>` : ''}
+                        </div>
+                    `);
+                });
+            }
+        </script>
+</body>
+
+<style>
+    .hero-item {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+
+    .hero-item:hover {
+        transform: scale(1.02);
+        background: rgba(32, 194, 132, 0.05) !important;
+        border-color: var(--accent-glow) !important;
+        box-shadow: 0 0 15px rgba(32, 194, 132, 0.2);
+    }
+
+    .x-small {
+        font-size: 0.7rem;
+    }
+
+    #heroBattleHistory::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    #heroBattleHistory::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 2px;
+    }
+
+    /* Fix Modal Visual Clarity */
+    .modal-content {
+        background: #111 !important;
+        border: 1px solid #444 !important;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    }
+
+    .btn-close-white {
+        filter: invert(1) grayscale(1) brightness(1.5);
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        opacity: 0.8;
+    }
+
+    .btn-close-white:hover {
+        background-color: rgba(32, 194, 132, 0.3);
+        opacity: 1;
+    }
+
+    /* Avatar Ornaments */
+    .hero-ornament {
+        position: absolute;
+        pointer-events: none;
+        animation: floatOrnament 3s ease-in-out infinite;
+        z-index: 5;
+    }
+
+    .hero-ornament.crown {
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 2.2rem;
+        filter: drop-shadow(0 0 5px gold);
+    }
+
+    .hero-ornament.shield {
+        bottom: 5px;
+        right: -15px;
+        font-size: 1.8rem;
+        transform: rotate(15deg);
+    }
+
+    .hero-ornament.fire {
+        top: 20px;
+        left: -15px;
+        font-size: 1.5rem;
+        animation-delay: 1s;
+    }
+
+    .hero-ornament.wings {
+        top: 10px;
+        width: 140px;
+        left: -10px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .hero-ornament.aura {
+        top: -10px;
+        left: -10px;
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 2px solid var(--accent-glow);
+        box-shadow: 0 0 20px var(--accent-glow);
+        opacity: 0.3;
+        animation: auraPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes floatOrnament {
+
+        0%,
+        100% {
+            transform: translate(-50%, 0);
+        }
+
+        50% {
+            transform: translate(-50%, -8px);
+        }
+    }
+
+    @keyframes auraPulse {
+
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 0.2;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 0.4;
+        }
+    }
+</style>
+
+</body>
+
+</html>

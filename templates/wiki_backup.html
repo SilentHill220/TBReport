@@ -1,0 +1,3750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隐秘之潮 Wiki</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=ZCOOL+QingKe+HuangYou&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.2.4/pixi.min.js"></script>
+
+    <style>
+        :root {
+            --bg-abyss: #0a0e14;
+            --bg-deep: #0f1419;
+            --bg-card: #151c24;
+            --bg-card-hover: #1a232e;
+            --border: #243040;
+            --border-glow: #20c284;
+            --text-main: #a8b5c5;
+            --text-muted: #5a6a7a;
+            --text-bright: #e8f0f8;
+            --accent-teal: #20c284;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #8b5cf6;
+            --accent-gold: #f59e0b;
+            --accent-red: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg-abyss);
+            font-family: 'Noto Sans SC', sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            font-size: 15px;
+            line-height: 1.7;
+            letter-spacing: 0.02em;
+        }
+
+        /* Subtle background */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at 30% 20%, rgba(32, 194, 132, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Minimal Header */
+        .wiki-header {
+            background: rgba(15, 20, 25, 0.95);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-teal);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 16px 8px 36px;
+            color: var(--text-main);
+            width: 280px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-teal);
+            width: 320px;
+        }
+
+        /* Search Dropdown */
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 320px;
+            overflow-y: auto;
+            display: none;
+            z-index: 150;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .search-dropdown.active {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .search-result-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .search-result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .search-result-title {
+            color: var(--text-bright);
+            font-weight: 500;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .search-result-type {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .search-no-result {
+            padding: 20px 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover {
+            color: var(--text-bright);
+            background: var(--bg-card);
+        }
+
+        .header-btn.primary {
+            background: var(--accent-teal);
+            color: #000;
+        }
+
+        .header-btn.primary:hover {
+            opacity: 0.9;
+        }
+
+        /* Main Container */
+        .wiki-main {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* === PORTAL VIEW === */
+        .portal-view {
+            display: block;
+        }
+
+        .portal-hero {
+            position: relative;
+            text-align: center;
+            margin-bottom: 48px;
+            padding: 80px 20px;
+            background: linear-gradient(135deg, rgba(32, 194, 132, 0.08) 0%, rgba(10, 14, 20, 0.95) 50%, rgba(0, 212, 255, 0.08) 100%);
+            border-radius: 24px;
+            border: 1px solid rgba(32, 194, 132, 0.25);
+            overflow: hidden;
+            box-shadow:
+                0 0 60px rgba(32, 194, 132, 0.1),
+                inset 0 0 80px rgba(32, 194, 132, 0.05);
+        }
+
+        /* Ripple waves animation */
+        .portal-hero::before {
+            content: "";
+            position: absolute;
+            inset: -50%;
+            background:
+                radial-gradient(ellipse at 30% 40%, rgba(32, 194, 132, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 60%, rgba(0, 212, 255, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+            animation: rippleWave 15s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes rippleWave {
+
+            0%,
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.1) rotate(3deg);
+                opacity: 1;
+            }
+        }
+
+        /* Floating light orbs */
+        .portal-hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(3px 3px at 15% 25%, rgba(32, 194, 132, 0.8), transparent),
+                radial-gradient(2px 2px at 25% 55%, rgba(0, 212, 255, 0.6), transparent),
+                radial-gradient(3px 3px at 45% 15%, rgba(139, 92, 246, 0.7), transparent),
+                radial-gradient(2px 2px at 55% 75%, rgba(32, 194, 132, 0.6), transparent),
+                radial-gradient(3px 3px at 75% 35%, rgba(0, 212, 255, 0.8), transparent),
+                radial-gradient(2px 2px at 85% 65%, rgba(139, 92, 246, 0.5), transparent),
+                radial-gradient(2px 2px at 35% 85%, rgba(255, 255, 255, 0.4), transparent),
+                radial-gradient(3px 3px at 65% 45%, rgba(32, 194, 132, 0.7), transparent),
+                radial-gradient(2px 2px at 10% 70%, rgba(0, 212, 255, 0.5), transparent),
+                radial-gradient(2px 2px at 90% 20%, rgba(139, 92, 246, 0.6), transparent);
+            background-size: 100% 100%;
+            animation: floatingOrbs 25s linear infinite;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        @keyframes floatingOrbs {
+            0% {
+                transform: translateY(0) translateX(0);
+            }
+
+            25% {
+                transform: translateY(-15px) translateX(10px);
+            }
+
+            50% {
+                transform: translateY(-8px) translateX(-15px);
+            }
+
+            75% {
+                transform: translateY(-20px) translateX(5px);
+            }
+
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+        }
+
+        /* Central glow pulse */
+        .portal-glow-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(32, 194, 132, 0.2) 0%, rgba(0, 212, 255, 0.1) 30%, transparent 70%);
+            transform: translate(-50%, -50%);
+            animation: centerPulse 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes centerPulse {
+
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: translate(-50%, -50%) scale(1.15);
+            }
+        }
+
+        #particleCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .portal-glow {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(32, 194, 132, 0.4) 0%, rgba(0, 212, 255, 0.2) 40%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s;
+            filter: blur(30px);
+            z-index: 1;
+            opacity: 0;
+        }
+
+        .portal-hero:hover .portal-glow {
+            opacity: 1;
+        }
+
+        .portal-title {
+            position: relative;
+            font-size: 3.2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+            text-shadow:
+                0 0 20px rgba(32, 194, 132, 0.9),
+                0 0 40px rgba(32, 194, 132, 0.5),
+                0 0 60px rgba(32, 194, 132, 0.3),
+                0 0 80px rgba(0, 212, 255, 0.2);
+            z-index: 2;
+            animation: titleGlow 3s ease-in-out infinite;
+            letter-spacing: 0.1em;
+        }
+
+        @keyframes titleGlow {
+
+            0%,
+            100% {
+                text-shadow:
+                    0 0 20px rgba(32, 194, 132, 0.9),
+                    0 0 40px rgba(32, 194, 132, 0.5),
+                    0 0 60px rgba(32, 194, 132, 0.3);
+                filter: brightness(1);
+            }
+
+            50% {
+                text-shadow:
+                    0 0 30px rgba(32, 194, 132, 1),
+                    0 0 60px rgba(32, 194, 132, 0.7),
+                    0 0 90px rgba(32, 194, 132, 0.5),
+                    0 0 120px rgba(0, 212, 255, 0.3);
+                filter: brightness(1.1);
+            }
+        }
+
+        .portal-hero:hover .portal-title {
+            animation: titleGlowHover 1.5s ease-in-out infinite;
+        }
+
+        @keyframes titleGlowHover {
+
+            0%,
+            100% {
+                text-shadow:
+                    0 0 25px rgba(32, 194, 132, 1),
+                    0 0 50px rgba(32, 194, 132, 0.7),
+                    0 0 80px rgba(32, 194, 132, 0.5);
+            }
+
+            50% {
+                text-shadow:
+                    0 0 40px rgba(32, 194, 132, 1),
+                    0 0 80px rgba(32, 194, 132, 0.8),
+                    0 0 120px rgba(32, 194, 132, 0.6),
+                    0 0 160px rgba(0, 212, 255, 0.4);
+            }
+        }
+
+        .portal-subtitle {
+            position: relative;
+            color: var(--text-main);
+            font-size: 1.2rem;
+            z-index: 2;
+            opacity: 0.9;
+            letter-spacing: 0.15em;
+            animation: subtitleFade 4s ease-in-out infinite;
+        }
+
+        @keyframes subtitleFade {
+
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Stats bar on hero */
+        .portal-stats {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(32, 194, 132, 0.2);
+        }
+
+        .portal-stat {
+            text-align: center;
+        }
+
+        .portal-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-teal);
+            text-shadow: 0 0 20px rgba(32, 194, 132, 0.5);
+        }
+
+        .portal-stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Category Cards */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .category-card {
+            background: linear-gradient(145deg, var(--bg-card), var(--bg-card-hover));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 24px;
+            /* Reduced padding */
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            height: 120px;
+            /* Flattened */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Talent Tree Styles */
+        .talent-group-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            grid-column: 1 / -1;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .talent-level-row {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 40px;
+            position: relative;
+            min-width: max-content;
+        }
+
+        .talent-node {
+            width: 180px;
+            background: var(--bg-abyss);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 2;
+        }
+
+        .talent-node:hover {
+            border-color: var(--accent-teal);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .talent-node-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-bright);
+        }
+
+        .talent-node-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .talent-arrow-down {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+            opacity: 0.3;
+        }
+
+        .category-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(32, 194, 132, 0.1) 0%, transparent 60%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .category-card::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+            transition: left 0.6s;
+        }
+
+        .category-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--accent-teal);
+            box-shadow:
+                0 20px 40px rgba(32, 194, 132, 0.2),
+                0 0 0 1px rgba(32, 194, 132, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .category-card:hover::before {
+            opacity: 1;
+        }
+
+        .category-card:hover::after {
+            left: 100%;
+        }
+
+        .category-card:active {
+            transform: translateY(-4px) scale(0.98);
+        }
+
+        .category-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 12px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg-abyss);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .category-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .category-icon-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-card-hover));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--text-muted);
+        }
+
+        .category-name {
+            font-size: 1.2rem;
+            color: var(--text-bright);
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .category-count {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* === CATEGORY LIST VIEW === */
+        .category-list-view {
+            display: none;
+        }
+
+        .category-list-view.active {
+            display: block;
+        }
+
+        .category-list-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .back-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        .category-list-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .category-list-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--bg-card);
+        }
+
+        .category-list-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .entry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .entry-card {
+            background: linear-gradient(145deg, var(--bg-card), rgba(21, 28, 36, 0.95));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 0;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+            min-height: 160px;
+        }
+
+        /* Decorative background pattern */
+        .entry-card::before {
+            content: "";
+            position: absolute;
+            right: -30px;
+            bottom: -30px;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, var(--card-accent, var(--accent-teal)) 0%, transparent 70%);
+            opacity: 0.06;
+            transition: all 0.4s;
+            border-radius: 50%;
+        }
+
+        /* Left accent bar */
+        .entry-card::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--card-accent, var(--accent-teal)), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .entry-card:hover {
+            border-color: var(--card-accent, var(--accent-teal));
+            transform: translateY(-6px) scale(1.01);
+            box-shadow:
+                0 12px 32px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(32, 194, 132, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .entry-card:hover::before {
+            opacity: 0.15;
+            transform: scale(1.3);
+        }
+
+        .entry-card:hover::after {
+            opacity: 1;
+        }
+
+        /* Card inner layout */
+        .entry-card-inner {
+            display: flex;
+            gap: 16px;
+            padding: 20px;
+            height: 100%;
+        }
+
+        .entry-card-header {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        /* Left content area */
+        .entry-card-left {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 18px;
+            min-width: 0;
+        }
+
+        .entry-card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1));
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.2),
+                0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .entry-card-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .entry-card-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Right cover image area */
+        .entry-card-cover {
+            width: 100px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(32, 194, 132, 0.08), rgba(0, 212, 255, 0.05));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            border-left: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .entry-card-cover::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 70% 30%, rgba(32, 194, 132, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 30% 70%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
+            opacity: 0.6;
+        }
+
+        .entry-card-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .entry-card-cover-placeholder {
+            font-size: 2.5rem;
+            opacity: 0.2;
+            z-index: 1;
+        }
+
+        .entry-card-title {
+            font-size: 1.15rem;
+            color: var(--text-bright);
+            font-weight: 600;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .entry-card-subtitle {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+        }
+
+        .entry-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: auto;
+        }
+
+        .entry-card-tag {
+            background: linear-gradient(135deg, rgba(32, 194, 132, 0.15), rgba(32, 194, 132, 0.08));
+            color: var(--accent-teal);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            border: 1px solid rgba(32, 194, 132, 0.2);
+        }
+
+        /* Card type badge */
+        .entry-card-type-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 10px;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+            background: linear-gradient(180deg, rgba(32, 194, 132, 0.03) 0%, transparent 100%);
+            border-radius: 16px;
+            border: 1px dashed var(--border);
+        }
+
+        .empty-state-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            opacity: 0.4;
+            animation: emptyPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes emptyPulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.05);
+            }
+        }
+
+        .empty-state-text {
+            font-size: 1.2rem;
+            margin-bottom: 24px;
+        }
+
+        /* Recent Updates */
+        .section-title {
+            font-family: 'ZCOOL QingKe HuangYou', cursive;
+            font-size: 1.4rem;
+            color: var(--text-bright);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recent-list {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .recent-item {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .recent-item:last-child {
+            border-bottom: none;
+        }
+
+        .recent-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .recent-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .recent-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .recent-title {
+            color: var(--text-bright);
+            font-weight: 500;
+        }
+
+        .recent-type {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .recent-date {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* === ENTRY VIEW === */
+        .entry-view {
+            display: none;
+        }
+
+        .entry-view.active {
+            display: block;
+        }
+
+        .portal-view.hidden {
+            display: none;
+        }
+
+        .entry-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 32px;
+        }
+
+        @media (max-width: 900px) {
+            .entry-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .entry-infobox {
+                order: -1;
+            }
+        }
+
+        /* Breadcrumb */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .breadcrumb a {
+            color: var(--accent-teal);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        /* Entry Content */
+        .entry-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 32px;
+        }
+
+        .entry-title {
+            font-family: 'ZCOOL QingKe HuangYou', cursive;
+            font-size: 2rem;
+            color: var(--text-bright);
+            margin-bottom: 8px;
+        }
+
+        .entry-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .entry-body {
+            line-height: 1.9;
+            font-size: 15px;
+        }
+
+        .entry-body h2 {
+            font-size: 1.3rem;
+            color: var(--accent-cyan);
+            margin: 1.5em 0 0.6em;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .entry-body p {
+            margin-bottom: 1em;
+        }
+
+        .entry-body ul,
+        .entry-body ol {
+            padding-left: 1.5em;
+            margin: 1em 0;
+        }
+
+        .entry-body li {
+            margin-bottom: 0.5em;
+        }
+
+        /* Code blocks */
+        .entry-body code {
+            background: rgba(32, 194, 132, 0.1);
+            color: var(--accent-teal);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+
+        .entry-body pre {
+            background: var(--bg-abyss);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+
+        .entry-body pre code {
+            background: transparent;
+            padding: 0;
+            color: var(--text-main);
+        }
+
+        /* Tables */
+        .entry-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            font-size: 14px;
+        }
+
+        .entry-body th,
+        .entry-body td {
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        .entry-body th {
+            background: var(--bg-card-hover);
+            color: var(--text-bright);
+            font-weight: 500;
+        }
+
+        .entry-body tr:hover td {
+            background: rgba(32, 194, 132, 0.05);
+        }
+
+        /* Blockquote */
+        .entry-body blockquote {
+            border-left: 3px solid var(--accent-teal);
+            background: rgba(32, 194, 132, 0.05);
+            padding: 12px 20px;
+            margin: 1em 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-main);
+        }
+
+        .entry-body blockquote p {
+            margin: 0;
+        }
+
+        /* Internal links */
+        .entry-body a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-bottom: 1px dotted var(--accent-cyan);
+            transition: all 0.2s;
+        }
+
+        .entry-body a:hover {
+            color: var(--accent-teal);
+            border-bottom-style: solid;
+        }
+
+        /* Strong and emphasis */
+        .entry-body strong {
+            color: var(--text-bright);
+            font-weight: 600;
+        }
+
+        .entry-body em {
+            color: var(--accent-purple);
+            font-style: italic;
+        }
+
+        /* Infobox */
+        .entry-infobox {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            height: fit-content;
+            position: sticky;
+            top: 80px;
+        }
+
+        .infobox-header {
+            padding: 16px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .infobox-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg-abyss);
+        }
+
+        .infobox-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .infobox-title {
+            font-size: 1.2rem;
+            color: var(--text-bright);
+            font-weight: 600;
+        }
+
+        .infobox-type {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .infobox-table {
+            padding: 12px 0;
+        }
+
+        .infobox-row {
+            display: flex;
+            padding: 10px 20px;
+            border-bottom: 1px solid rgba(36, 48, 64, 0.5);
+        }
+
+        .infobox-row:last-child {
+            border-bottom: none;
+        }
+
+        .infobox-label {
+            width: 80px;
+            flex-shrink: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .infobox-value {
+            flex: 1;
+            color: var(--text-bright);
+            font-size: 13px;
+        }
+
+        .infobox-tags {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tag {
+            background: rgba(32, 194, 132, 0.15);
+            color: var(--accent-teal);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        /* === EDIT VIEW === */
+        /* === EDIT VIEW (MODAL) === */
+        .edit-view {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            background: rgba(10, 14, 20, 0.85);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .edit-view.active {
+            display: flex;
+        }
+
+        .edit-form {
+            margin: auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            animation: scaleIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .edit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .edit-title {
+            font-size: 1.3rem;
+            color: var(--text-bright);
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 700px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .editor-toolbar-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .editor-toolbar-btn:hover {
+            background: var(--accent-teal);
+            color: #fff;
+            border-color: var(--accent-teal);
+        }
+
+        .editor-dropdown {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 200px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .editor-dropdown.active {
+            display: block;
+        }
+
+        .editor-dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-bright);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editor-dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            background: var(--bg-abyss);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: var(--accent-teal);
+        }
+
+        .form-textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-teal);
+            color: #000;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-muted);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--accent-teal);
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            z-index: 300;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: var(--accent-red);
+            color: #fff;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            color: var(--text-bright);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-input {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+
+        /* Image Upload */
+        .image-upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-abyss);
+            margin-bottom: 16px;
+        }
+
+        .image-upload-zone:hover {
+            border-color: var(--accent-teal);
+            background: rgba(32, 194, 132, 0.05);
+        }
+
+        .image-upload-zone.has-image {
+            padding: 12px;
+        }
+
+        .image-upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            opacity: 0.6;
+        }
+
+        .image-upload-text {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .image-preview-small {
+            max-height: 120px;
+            margin: 8px 0;
+        }
+
+        .image-remove-btn {
+            background: var(--accent-red);
+            color: #fff;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        /* Icon upload zone */
+        .icon-upload-zone {
+            width: 80px;
+            height: 80px;
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-abyss);
+        }
+
+        .icon-upload-zone:hover {
+            border-color: var(--accent-teal);
+        }
+
+        .icon-upload-zone.has-icon {
+            border-style: solid;
+        }
+
+        .icon-upload-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-upload-zone img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Gallery for content images */
+        .content-images-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        .gallery-item-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .add-image-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+            background: var(--bg-abyss);
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .add-image-btn:hover {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        /* Related Entries Selector */
+        .related-entries-section {
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg-abyss);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .related-entries-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .related-entries-title {
+            color: var(--text-bright);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .related-entries-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 40px;
+        }
+
+        .related-entry-tag {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(32, 194, 132, 0.15);
+            color: var(--accent-teal);
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+        }
+
+        .related-entry-remove {
+            background: transparent;
+            border: none;
+            color: var(--accent-teal);
+            cursor: pointer;
+            padding: 0;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .related-entry-remove:hover {
+            color: var(--accent-red);
+        }
+
+        /* Entry Picker Dropdown */
+        .entry-picker {
+            position: relative;
+        }
+
+        .entry-picker-input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .entry-picker-input:focus {
+            border-color: var(--accent-teal);
+        }
+
+        .entry-picker-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 50;
+            display: none;
+        }
+
+        .entry-picker-dropdown.active {
+            display: block;
+        }
+
+        .entry-picker-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.15s;
+        }
+
+        .entry-picker-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .entry-picker-item-icon {
+            font-size: 1.1rem;
+        }
+
+        .entry-picker-item-info {
+            flex: 1;
+        }
+
+        .entry-picker-item-title {
+            color: var(--text-bright);
+            font-size: 13px;
+        }
+
+        .entry-picker-item-type {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        /* Section title in edit form */
+        .edit-section-title {
+            color: var(--text-bright);
+            font-size: 14px;
+            font-weight: 500;
+            margin: 20px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="wiki-header">
+        <div class="header-left">
+            <div class="logo" onclick="showPortal()">
+                <div class="logo-icon">潮</div>
+                <span>隐秘之潮</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <a class="header-btn" href="/">控制台</a>
+            <a class="header-btn" href="/dashboard">看板</a>
+            <a class="header-btn" href="/docs">神秘档案</a>
+            <button class="header-btn primary" id="editBtn" onclick="requestEditMode()">✏️ 编辑</button>
+        </div>
+    </header>
+
+    <aside class="wiki-sidebar">
+        <div class="sidebar-search-container">
+            <span class="sidebar-search-icon">🔍</span>
+            <input type="text" class="sidebar-search-input" id="searchInput" placeholder="搜索词条..."
+                oninput="handleSearch()" onfocus="handleSearch()">
+            <div class="search-dropdown" id="searchDropdown"
+                style="top: 100%; width: 100%; border-radius: 8px; margin-top: 4px;">
+                <!-- Dynamic search results -->
+            </div>
+        </div>
+
+        <div class="sidebar-nav-section">
+            <div class="sidebar-label">核心档案</div>
+            <div class="sidebar-nav-item" onclick="showCategoryList('monster')">
+                <span class="sidebar-icon">👹</span> 怪物图鉴
+            </div>
+            <div class="sidebar-nav-item" onclick="showCategoryList('item')">
+                <span class="sidebar-icon">🔮</span> 道具遗物
+            </div>
+            <div class="sidebar-nav-item" onclick="showCategoryList('talent')">
+                <span class="sidebar-icon">⚡</span> 天赋系统
+            </div>
+            <div class="sidebar-nav-item" onclick="showCategoryList('character')">
+                <span class="sidebar-icon">👥</span> 角色介绍
+            </div>
+            <div class="sidebar-nav-item" onclick="showCategoryList('lore')">
+                <span class="sidebar-icon">📜</span> 世界设定
+            </div>
+        </div>
+    </aside>
+
+    <main class="wiki-main">
+        <!-- Portal View -->
+        <div class="portal-view" id="portalView">
+            <div class="portal-hero" id="portalHero">
+                <!-- WebGL Shader Container -->
+                <div id="heroShaderContainer" style="position: absolute; inset: 0; z-index: 0;"></div>
+                <canvas id="particleCanvas"></canvas>
+                <div class="portal-glow-center"></div>
+                <div class="portal-glow" id="portalGlow"></div>
+                <h1 class="portal-title">隐秘之潮 Wiki</h1>
+                <p class="portal-subtitle">探索深渊的秘密，记录世界的一切</p>
+
+                <!-- Stats bar -->
+                <div class="portal-stats" id="portalStats">
+                    <div class="portal-stat">
+                        <div class="portal-stat-value" id="statTotal">0</div>
+                        <div class="portal-stat-label">词条总数</div>
+                    </div>
+                    <div class="portal-stat">
+                        <div class="portal-stat-value" id="statCategories">5</div>
+                        <div class="portal-stat-label">分类数量</div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Category grid moved to sidebar -->
+
+            <!-- Recently updated entries section has been removed -->
+        </div>
+
+        <!-- Category List View -->
+        <div class="category-list-view" id="categoryListView">
+            <div class="category-list-header"
+                style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <button class="back-btn" onclick="showPortal()">←</button>
+                    <h1 class="category-list-title" id="categoryListTitle">
+                        <div class="category-list-icon" id="categoryListIcon"></div>
+                        <span id="categoryListName">怪物图鉴</span>
+                    </h1>
+                </div>
+                <button class="btn btn-primary" onclick="createNewEntryInCategory()" id="createInCategoryBtn">➕
+                    新建词条</button>
+            </div>
+            <div class="entry-grid" id="entryGrid">
+                <!-- Dynamic entry cards -->
+            </div>
+        </div>
+
+        <!-- Entry View -->
+        <div class="entry-view" id="entryView">
+            <div class="breadcrumb">
+                <button class="back-link" onclick="goBack()" title="返回上一页">
+                    <span style="font-size: 1.2rem;">←</span>
+                </button>
+                <a href="javascript:showPortal()">首页</a>
+                <span>›</span>
+                <span id="breadcrumbType">--</span>
+                <span>›</span>
+                <span id="breadcrumbTitle">--</span>
+            </div>
+
+            <div class="entry-layout">
+                <div class="entry-content">
+                    <h1 class="entry-title" id="entryTitle">--</h1>
+                    <div class="entry-subtitle" id="entrySubtitle">--</div>
+                    <div class="entry-body" id="entryBody">
+                        <!-- Content -->
+                    </div>
+                </div>
+
+                <aside class="entry-infobox">
+                    <div class="infobox-header">
+                        <div class="infobox-icon" id="infoboxIcon">🌊</div>
+                        <div class="infobox-title" id="infoboxTitle">--</div>
+                        <div class="infobox-type" id="infoboxType">--</div>
+                    </div>
+                    <div class="infobox-table" id="infoboxTable">
+                        <!-- Dynamic -->
+                    </div>
+                    <div class="infobox-tags" id="infoboxTags">
+                        <!-- Dynamic -->
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- Edit View -->
+        <div class="edit-view" id="editView">
+            <div class="edit-form">
+                <div class="edit-header">
+                    <div class="edit-title" id="editFormTitle">编辑词条</div>
+                    <div class="edit-actions">
+                        <button class="btn btn-secondary" onclick="cancelEdit()">取消</button>
+                        <button class="btn btn-secondary" id="deleteEntryBtn"
+                            style="color: var(--accent-red); display: none;" onclick="confirmDeleteEntry()">🗑️
+                            删除</button>
+                        <button class="btn btn-primary" onclick="saveEntry()">💾 保存</button>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">词条ID (英文)</label>
+                        <input type="text" class="form-input" id="editId" placeholder="如: monster-leviathan">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">类型</label>
+                        <select class="form-select" id="editType"
+                            onchange="updateInfoboxFields(); document.getElementById('editTalentFields').style.display = this.value === 'talent' ? 'block' : 'none';">
+                            <option value="monster">怪物</option>
+                            <option value="item">道具遗物</option>
+                            <option value="talent">天赋系统</option>
+                            <option value="character">角色</option>
+                            <option value="lore">世界设定</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">标题</label>
+                        <input type="text" class="form-input" id="editTitle" placeholder="词条标题">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">副标题</label>
+                        <input type="text" class="form-input" id="editSubtitle" placeholder="简短描述">
+                    </div>
+
+                    <!-- Talent Specific Fields -->
+                    <div id="editTalentFields"
+                        style="display:none; grid-column: 1 / -1; background: rgba(32, 194, 132, 0.05); padding: 12px; border-radius: 8px; border: 1px dashed var(--accent-teal);">
+                        <div style="font-size:12px; color:var(--accent-teal); margin-bottom:8px;">天赋属性</div>
+                        <div class="form-grid" style="gap: 12px;">
+                            <div class="form-group">
+                                <label class="form-label">天赋组 ID</label>
+                                <input type="text" class="form-input" id="editTalentGroup" placeholder="如: 10009">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">前置天赋 ID (逗号分隔)</label>
+                                <input type="text" class="form-input" id="editTalentParents"
+                                    placeholder="如: 1001, 1002">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">词条图标</label>
+                        <div class="icon-upload-zone" id="iconUploadZone"
+                            onclick="document.getElementById('iconImageInput').click()">
+                            <div class="icon-upload-placeholder" id="iconUploadPlaceholder">
+                                <span style="font-size: 1.5rem; color: var(--text-muted);">+</span>
+                                <span style="font-size: 11px; color: var(--text-muted);">上传图标</span>
+                            </div>
+                        </div>
+                        <input type="file" id="iconImageInput" accept="image/*" style="display: none;"
+                            onchange="handleIconImageUpload(event)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">标签 (逗号分隔)</label>
+                        <input type="text" class="form-input" id="editTags" placeholder="如: Boss, 深渊, 巨型">
+                    </div>
+                </div>
+
+                <!-- Cover Image Upload -->
+                <div class="edit-section-title">🖼️ 封面图片</div>
+                <div class="image-upload-zone" id="coverImageZone"
+                    onclick="document.getElementById('coverImageInput').click()">
+                    <div class="image-upload-icon">📷</div>
+                    <div class="image-upload-text">点击上传封面图片</div>
+                </div>
+                <input type="file" id="coverImageInput" accept="image/*" style="display: none;"
+                    onchange="handleCoverImageUpload(event)">
+
+                <div id="infoboxFieldsContainer">
+                    <!-- Dynamic infobox fields -->
+                </div>
+
+                <div class="form-group full-width" style="position: relative;">
+                    <label class="form-label">
+                        <span>内容 (Markdown)</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button type="button" class="editor-toolbar-btn" onclick="toggleLinkPicker(this)">🔗
+                                插入引用</button>
+                            <a href="https://markdown.com.cn/" target="_blank"
+                                style="color: var(--text-dim); text-decoration: underline; font-size: 11px;">语法参考</a>
+                        </div>
+                    </label>
+                    <textarea class="form-textarea" id="editContent" rows="15"
+                        placeholder="支持 Markdown 语法..."></textarea>
+
+                    <!-- Link Picker Dropdown -->
+                    <div id="linkPickerDropdown" class="editor-dropdown">
+                        <input type="text" id="linkPickerInput" placeholder="搜索并插入..."
+                            style="width: 100%; padding: 8px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-bright); outline: none;"
+                            oninput="filterLinkPicker()">
+                        <div id="linkPickerList"></div>
+                    </div>
+                </div>
+
+                <!-- Content Images Gallery -->
+                <div class="edit-section-title">🎨 设定图/概念图</div>
+                <div class="content-images-gallery" id="contentImagesGallery">
+                    <!-- Dynamic gallery items -->
+                    <div class="add-image-btn" onclick="document.getElementById('contentImageInput').click()">
+                        <span style="font-size: 1.5rem;">+</span>
+                        <span style="font-size: 12px;">添加图片</span>
+                    </div>
+                </div>
+                <input type="file" id="contentImageInput" accept="image/*" style="display: none;"
+                    onchange="handleContentImageUpload(event)">
+
+                <!-- Related Entries Selector -->
+                <div class="related-entries-section">
+                    <div class="related-entries-header">
+                        <span class="related-entries-title">🔗 相关词条</span>
+                    </div>
+                    <div class="related-entries-list" id="relatedEntriesList">
+                        <!-- Dynamic tags -->
+                    </div>
+                    <div class="entry-picker" style="margin-top: 12px;">
+                        <input type="text" class="entry-picker-input" id="entryPickerInput" placeholder="搜索词条添加..."
+                            oninput="filterEntriesForPicker()" onfocus="filterEntriesForPicker()">
+                        <div class="entry-picker-dropdown" id="entryPickerDropdown">
+                            <!-- Dynamic items -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Verify Modal -->
+    <div class="modal-overlay" id="verifyModal">
+        <div class="modal-box">
+            <h3 class="modal-title">🔐 输入验证码</h3>
+            <input type="password" class="form-input modal-input" id="verifyCode" placeholder="验证码"
+                onkeypress="if(event.key==='Enter') verifyCode()">
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="verifyCode()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let schema = null;
+        let allEntries = {};
+        let currentEntry = null;
+        let isAuthenticated = false;
+        let isNewEntry = false;
+        let currentCategoryType = null;
+        let pendingNewEntryType = null;
+
+        // Image and related entries state
+        let coverImageUrl = '';
+        let contentImages = [];
+        let relatedEntries = [];
+        let iconImageUrl = '';  // 词条图标图片
+
+        const typeColors = {
+            monster: '#ef4444',
+            item: '#f59e0b',
+            character: '#8b5cf6',
+            lore: '#06b6d4'
+        };
+
+        // 分类图标图片路径（可上传自定义图片替换）
+        const typeIconImages = {
+            monster: null,  // 使用占位符
+            item: null,
+            character: null,
+            lore: null
+        };
+
+        // 占位符文字
+        const typeIconPlaceholders = {
+            monster: '怪',
+            item: '器',
+            character: '人',
+            lore: '世'
+        };
+
+        const typeNames = {
+            monster: '怪物',
+            item: '道具遗物',
+            character: '角色',
+            lore: '世界设定'
+        };
+
+        const typeIcons = {
+            monster: '👾',
+            item: '🔮',
+            character: '👤',
+            lore: '📜'
+        };
+
+
+        // 生成图标HTML（图片或占位符）
+        function renderCategoryIcon(type, size = 64) {
+            const imgPath = typeIconImages[type];
+            const color = typeColors[type] || '#888';
+            if (imgPath) {
+                return `<img src="${imgPath}" alt="${typeNames[type] || type}">`;
+            } else {
+                return `<div class="category-icon-placeholder" style="color: ${color};">${typeIconPlaceholders[type] || '?'}</div>`;
+            }
+        }
+
+        marked.setOptions({ breaks: true });
+
+        // ===== PARTICLE SYSTEM =====
+        function initParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            const hero = document.getElementById('portalHero');
+            const glow = document.getElementById('portalGlow');
+
+            let particles = [];
+            let mouseX = 0, mouseY = 0;
+            let targetX = 0, targetY = 0;
+
+            function resize() {
+                canvas.width = hero.offsetWidth;
+                canvas.height = hero.offsetHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            // Create particles
+            class Particle {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 3 + 1;
+                    this.speedX = (Math.random() - 0.5) * 0.5;
+                    this.speedY = (Math.random() - 0.5) * 0.5;
+                    this.opacity = Math.random() * 0.5 + 0.2;
+                    this.color = Math.random() > 0.5 ?
+                        `rgba(32, 194, 132, ${this.opacity})` :
+                        `rgba(0, 212, 255, ${this.opacity})`;
+                }
+                update() {
+                    // Attract to mouse
+                    const dx = targetX - this.x;
+                    const dy = targetY - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        this.x += dx * 0.01;
+                        this.y += dy * 0.01;
+                    }
+
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+
+                    if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                    if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < 60; i++) {
+                particles.push(new Particle());
+            }
+
+            // Mouse tracking
+            hero.addEventListener('mousemove', (e) => {
+                const rect = hero.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+
+                // Move glow
+                glow.style.left = mouseX + 'px';
+                glow.style.top = mouseY + 'px';
+            });
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Smooth mouse follow
+                targetX += (mouseX - targetX) * 0.05;
+                targetY += (mouseY - targetY) * 0.05;
+
+                // Draw connections
+                particles.forEach((p, i) => {
+                    particles.slice(i + 1).forEach(p2 => {
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 80) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = `rgba(32, 194, 132, ${0.15 * (1 - dist / 80)})`;
+                            ctx.stroke();
+                        }
+                    });
+                });
+
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // ===== WEBGL SHADER EFFECT WITH DEPTH MAP =====
+        // ===== WEBGL SHADER EFFECT WITH DEPTH MAP =====
+        async function initHeroShader() {
+            console.log("initHeroShader called");
+            const container = document.getElementById('heroShaderContainer');
+            if (!container || typeof PIXI === 'undefined') {
+                console.log('PixiJS or container not available', { container, pixi: typeof PIXI });
+                return;
+            }
+            console.log("Container found, PIXI available");
+
+            try {
+                console.log("Creating PIXI Application");
+                const app = new PIXI.Application({
+                    resizeTo: container,
+                    backgroundColor: 0x0a0e14,
+                    backgroundAlpha: 1
+                });
+                container.appendChild(app.view);
+                app.view.style.position = 'absolute';
+                app.view.style.inset = '0';
+                app.view.style.borderRadius = '24px';
+                console.log("PIXI App created and appended");
+
+                // Try to load depth map images
+                let bgTex, depthTex;
+                let useDepthMap = false;
+
+                try {
+                    console.log("Attempting to load assets...");
+                    bgTex = await PIXI.Assets.load('/images/launch_bg.jpg');
+                    console.log("Background loaded", bgTex);
+                    depthTex = await PIXI.Assets.load('/images/depth.jpg');
+                    console.log("Depth map loaded", depthTex);
+                    useDepthMap = true;
+                    console.log('Depth map loaded successfully');
+                } catch (e) {
+                    console.log('Asset loading failed, using procedural shader:', e);
+                }
+
+                if (useDepthMap) {
+                    // === DEPTH MAP PARALLAX SHADER ===
+                    const bgSprite = new PIXI.Sprite(bgTex);
+
+                    const fragSrc = `
+                        precision mediump float;
+                        varying vec2 vTextureCoord;
+                        uniform sampler2D uSampler;
+                        uniform sampler2D uDepthMap;
+                        uniform float uTime;
+                        uniform vec2 uMouse;
+                        
+                        // Torch Config
+                        const vec3 TORCH_COLOR = vec3(1.0, 0.7, 0.4); // Warm Orange
+                        const float TORCH_RADIUS = 0.45;
+                        const float TORCH_INTENSITY = 1.3;
+                        const float PARALLAX_STRENGTH = 0.05;
+
+                        // Noise for flicker
+                        float rand(vec2 co){
+                            return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+                        }
+
+                        void main() {
+                            vec2 uv = vTextureCoord;
+                            
+                            // 1. Calculate Parallax
+                            float initialDepth = texture2D(uDepthMap, uv).r;
+                            vec2 offset = uMouse * PARALLAX_STRENGTH * initialDepth;
+                            
+                            // Add subtle breathing to UV
+                            vec2 parallaxUV = uv + offset;
+                            parallaxUV += sin(uTime * 0.5) * 0.001;
+                            
+                            // 2. Sample Textures at new UV
+                            // Clamp UV to prevent wrapping artifacts
+                            if(parallaxUV.x < 0.0 || parallaxUV.x > 1.0 || parallaxUV.y < 0.0 || parallaxUV.y > 1.0) {
+                                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                                return;
+                            }
+                            
+                            vec4 texColor = texture2D(uSampler, parallaxUV);
+                            float depth = texture2D(uDepthMap, parallaxUV).r;
+                            
+                            // 3. Torch Light Calculation
+                            // Mouse pos is [-0.5, 0.5], map to [0, 1] for UV distance
+                            vec2 mousePos = uMouse + 0.5;
+                            float dist = distance(uv, mousePos);
+                            
+                            // Flicker effect
+                            float flicker = 0.92 + 0.08 * sin(uTime * 12.0) * rand(vec2(uTime, 0.0));
+                            
+                            // Light attenuation (circle)
+                            float lightMask = 1.0 - smoothstep(0.0, TORCH_RADIUS * flicker, dist);
+                            
+                            // Depth interaction: light catches protruding surfaces more (higher depth value)
+                            // But also light falls off in distance. Let's say depth=1 is CLOSE.
+                            // So closer objects (high depth) are brighter?
+                            // Actually, let's just make the light reveal the true color, and darkness hide it.
+                            
+                            float depthFactor = 0.3 + 0.7 * depth; // Objects closer are more affected by light
+                            
+                            // 4. Combine Lighting
+                            // Ambient light (dark, bluish fog)
+                            vec3 ambient = texColor.rgb * vec3(0.1, 0.15, 0.25);
+                            
+                            // Torch light (revealing the texture with warm tint)
+                            vec3 light = texColor.rgb * TORCH_COLOR * TORCH_INTENSITY * lightMask;
+                            
+                            // Boost light on closer objects
+                            light *= depthFactor;
+                            
+                            vec3 finalColor = ambient + light;
+                            
+                            // Vignette for atmosphere
+                            float vignette = 1.0 - smoothstep(0.5, 1.5, length(uv - 0.5) * 1.5);
+                            finalColor *= vignette;
+
+                            gl_FragColor = vec4(finalColor, 1.0);
+                        }
+                    `;
+
+                    const uniforms = { uDepthMap: depthTex, uTime: 0.0, uMouse: { x: 0, y: 0 } };
+                    const depthFilter = new PIXI.Filter(null, fragSrc, uniforms);
+
+                    function resize() {
+                        const w = app.screen.width, h = app.screen.height;
+                        const scale = Math.max(w / bgTex.width, h / bgTex.height);
+                        bgSprite.scale.set(scale);
+                        bgSprite.anchor.set(0.5);
+                        bgSprite.x = w / 2;
+                        bgSprite.y = h / 2;
+                    }
+
+                    app.stage.addChild(bgSprite);
+                    bgSprite.filters = [depthFilter];
+                    window.addEventListener('resize', resize);
+                    resize();
+
+                    let mouseX = 0, mouseY = 0, smoothX = 0, smoothY = 0;
+                    container.addEventListener('mousemove', (e) => {
+                        const rect = container.getBoundingClientRect();
+                        mouseX = (e.clientX - rect.left) / rect.width - 0.5;
+                        mouseY = (e.clientY - rect.top) / rect.height - 0.5;
+                    });
+                    container.addEventListener('mouseleave', () => { mouseX = 0; mouseY = 0; });
+                    app.ticker.add((delta) => {
+                        smoothX += (mouseX - smoothX) * 0.05 * delta;
+                        smoothY += (mouseY - smoothY) * 0.05 * delta;
+                        depthFilter.uniforms.uTime = app.ticker.lastTime / 1000;
+                        depthFilter.uniforms.uMouse = { x: smoothX, y: smoothY };
+                    });
+                } else {
+                    // === PROCEDURAL FALLBACK ===
+                    const bgGraphics = new PIXI.Graphics();
+                    function drawBg() {
+                        bgGraphics.clear();
+                        bgGraphics.beginFill(0x0a0e14);
+                        bgGraphics.drawRect(0, 0, app.screen.width, app.screen.height);
+                        bgGraphics.endFill();
+                    }
+                    drawBg();
+                    app.stage.addChild(bgGraphics);
+
+                    const fragSrc = `
+                        precision mediump float;
+                        varying vec2 vTextureCoord;
+                        uniform float uTime;
+                        uniform vec2 uMouse;
+                        
+                        const vec3 COLOR_TEAL = vec3(0.125, 0.76, 0.51);
+                        const vec3 FOG_COLOR = vec3(0.04, 0.05, 0.08);
+                        
+                        void main() {
+                            vec2 uv = vTextureCoord;
+                            vec2 center = vec2(0.5);
+                            vec2 offset = uMouse * 0.03;
+                            uv += offset * (1.0 - distance(uv, center));
+                            
+                            float dist = distance(uv, center);
+                            float breathe = sin(uTime * 0.3) * 0.1 + 0.5;
+                            float zone = 1.0 - smoothstep(0.2, 0.7, dist);
+                            
+                            vec3 color = FOG_COLOR;
+                            color = mix(color, COLOR_TEAL * 0.3, zone * breathe * 0.5);
+                            color += COLOR_TEAL * (1.0 - smoothstep(0.0, 0.4, distance(uv, center + offset * 2.0))) * 0.15;
+                            color *= 1.0 - smoothstep(0.5, 1.2, dist * 1.5);
+                            
+                            gl_FragColor = vec4(color, 1.0);
+                        }
+                    `;
+
+                    const uniforms = { uTime: 0.0, uMouse: { x: 0, y: 0 } };
+                    const shaderFilter = new PIXI.Filter(null, fragSrc, uniforms);
+                    bgGraphics.filters = [shaderFilter];
+
+                    let mouseX = 0, mouseY = 0, smoothX = 0, smoothY = 0;
+                    container.addEventListener('mousemove', (e) => {
+                        const rect = container.getBoundingClientRect();
+                        mouseX = (e.clientX - rect.left) / rect.width - 0.5;
+                        mouseY = (e.clientY - rect.top) / rect.height - 0.5;
+                    });
+                    container.addEventListener('mouseleave', () => { mouseX = 0; mouseY = 0; });
+
+                    app.ticker.add((delta) => {
+                        smoothX += (mouseX - smoothX) * 0.05 * delta;
+                        smoothY += (mouseY - smoothY) * 0.05 * delta;
+                        shaderFilter.uniforms.uTime = app.ticker.lastTime / 1000;
+                        shaderFilter.uniforms.uMouse = { x: smoothX, y: smoothY };
+                    });
+
+                    window.addEventListener('resize', drawBg);
+                }
+            } catch (e) {
+                console.error('Shader init failed:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // OPTIMIZATION: Check URL immediately to hide portal / show loading
+            const path = window.location.pathname;
+            const entryId = (path.startsWith('/wiki/') && path.length > 6) ? path.substring(6) : null;
+            const isEntryRoute = entryId && entryId !== 'home';
+
+            if (isEntryRoute) {
+                // Immediate UI switch to avoid flash
+                document.getElementById('portalView').classList.add('hidden');
+                document.getElementById('entryView').classList.add('active');
+                // Show skeleton state
+                document.getElementById('entryTitle').textContent = 'Loading...';
+                document.getElementById('entryBody').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">正在读取...</div>';
+            }
+
+            await loadSchema();
+            await loadIndex();
+            // renderPortal(); // Portal is rendered by default in HTML? specific render logic usually populates grid
+            renderPortal();
+            initParticles();
+            initHeroShader();
+
+            // Check URL for specific entry
+            if (isEntryRoute) {
+                await loadEntry(entryId);
+            }
+        });
+
+        async function loadSchema() {
+            try {
+                const resp = await fetch('/api/wiki/_schema');
+                if (resp.ok) {
+                    schema = await resp.json();
+                }
+            } catch (e) {
+                console.log('Schema not loaded');
+            }
+        }
+
+        async function loadIndex() {
+            try {
+                const resp = await fetch('/api/wiki');
+                const data = await resp.json();
+                allEntries = data.pages || {};
+            } catch (e) {
+                console.error('Failed to load index:', e);
+            }
+        }
+
+        function renderPortal() {
+            // Update stats
+            const totalCount = Object.keys(allEntries).length;
+            const statTotal = document.getElementById('statTotal');
+            if (statTotal) statTotal.textContent = totalCount;
+        }
+
+
+
+            // Recent updates list logic removed
+        }
+
+        function showPortal() {
+            document.getElementById('portalView').classList.remove('hidden');
+            document.getElementById('categoryListView').classList.remove('active');
+            document.getElementById('entryView').classList.remove('active');
+            document.getElementById('editView').classList.remove('active');
+            document.getElementById('searchDropdown').classList.remove('active');
+            document.getElementById('searchInput').value = '';
+            history.pushState(null, '', '/wiki');
+            currentEntry = null;
+        }
+
+        let previousView = null; // Track view for cancel/ESC
+
+        function showCategoryList(type) {
+            currentCategoryType = type;  // Store current category type
+
+            const categories = {
+                monster: { name: '怪物图鉴' },
+                item: { name: '道具遗物' },
+                talent: { name: '天赋系统' },
+                character: { name: '角色介绍' },
+                lore: { name: '世界设定' }
+            };
+
+            const cat = categories[type] || { name: '未知分类' };
+            const entries = Object.entries(allEntries).filter(([id, e]) => e.type === type);
+
+            // Update header with image icon
+            document.getElementById('categoryListIcon').innerHTML = renderCategoryIcon(type, 48);
+            document.getElementById('categoryListName').textContent = cat.name;
+
+            // Generate entry cards
+            if (type === 'talent') {
+                renderTalentTrees(entries);
+            } else {
+                renderStandardGrid(entries, type);
+            }
+
+            document.getElementById('portalView').classList.add('hidden');
+            document.getElementById('categoryListView').classList.add('active');
+
+            // Handle view transition
+            document.getElementById('entryView').classList.remove('active');
+            document.getElementById('editView').classList.remove('active');
+        }
+
+        function renderStandardGrid(entries, type) {
+            const grid = document.getElementById('entryGrid');
+            const placeholder = typeIconPlaceholders[type] || '?';
+
+            if (entries.length === 0) {
+                grid.innerHTML = `
+                        <div class="empty-state" style="grid-column: 1 / -1;" >
+                    <div class="empty-state-icon">${placeholder}</div>
+                    <div class="empty-state-text">该分类暂无词条</div>
+                    <button class="btn btn-primary" onclick="requestEditMode()">➕ 创建新词条</button>
+                </div>
+                        `;
+                return;
+            }
+
+            grid.innerHTML = entries.map(([id, entry]) => {
+                // 生成图标HTML：图片URL或占位符
+                let iconHtml;
+                if (entry.icon && entry.icon.startsWith('/wiki/assets/')) {
+                    iconHtml = `<img src="${entry.icon}" alt="${entry.title}">`;
+                } else {
+                    const placeholder = typeIconPlaceholders[entry.type] || '?';
+                    iconHtml = `<span style="font-size: 1.6rem;">${placeholder}</span>`;
+                }
+
+                // 副标题为空时显示默认文字
+                const subtitle = entry.subtitle || '暂无描述...';
+
+                // 右侧封面图
+                let coverHtml;
+                if (entry.cover_image) {
+                    coverHtml = `<img src="${entry.cover_image}" alt="">`;
+                } else {
+                    const coverPlaceholder = typeIconPlaceholders[entry.type] || '🌊';
+                    coverHtml = `<div class="entry-card-cover-placeholder">${coverPlaceholder}</div>`;
+                }
+
+                return `
+                        <div class="entry-card" onclick="loadEntry('${id}')" style="--card-accent: ${typeColors[type] || 'var(--accent-teal)'}">
+                            <div class="entry-card-header">
+                                <div class="entry-card-left">
+                                    <div class="entry-card-icon" style="background: ${typeColors[type] || '#333'}22; color: ${typeColors[type] || '#888'}">
+                                        ${iconHtml}
+                                    </div>
+                                    <div class="entry-card-content">
+                                        <div class="entry-card-title">${entry.title || id}</div>
+                                        <div class="entry-card-subtitle">${subtitle}</div>
+                                        ${entry.tags && entry.tags.length > 0 ? `
+                                    <div class="entry-card-tags">
+                                        ${entry.tags.slice(0, 3).map(tag => `<span class="entry-card-tag">${tag}</span>`).join('')}
+                                    </div>
+                                ` : ''}
+                                    </div>
+                                </div>
+                                <div class="entry-card-cover" style="--card-accent: ${typeColors[type] || 'var(--accent-teal)'}">
+                                    ${coverHtml}
+                                </div>
+                            </div>
+                </div>
+                        `;
+            }).join('');
+        }
+
+        function renderTalentTrees(entries) {
+            const grid = document.getElementById('entryGrid');
+            grid.innerHTML = ''; // Clear
+
+            // 1. Group by group_id
+            const groups = {};
+            entries.forEach(([id, entry]) => {
+                const groupId = (entry.talent_meta && entry.talent_meta.group_id) ||
+                    (entry.infobox && entry.infobox['天赋组']) || 'Other';
+                if (!groups[groupId]) groups[groupId] = [];
+                groups[groupId].push({ id, ...entry });
+            });
+
+            // 2. Render each group
+            Object.keys(groups).sort().forEach(groupId => {
+                const groupEntries = groups[groupId];
+
+                // Build Graph
+                const nodes = {};
+                groupEntries.forEach(e => nodes[e.id] = { ...e, children: [], level: 0 });
+
+                // Link Parents and Children
+                groupEntries.forEach(e => {
+                    const parents = (e.talent_meta && e.talent_meta.parents) || [];
+                    parents.forEach(pid => {
+                        const parentId = `talent-${pid}`;
+                        if (nodes[parentId]) {
+                            nodes[parentId].children.push(e.id);
+                        }
+                    });
+                });
+
+                // Calculate Levels using implicit depth
+                const getLevel = (nodeId, visited = new Set()) => {
+                    if (visited.has(nodeId)) return 0; // Cycle?
+                    visited.add(nodeId);
+
+                    const node = nodes[nodeId];
+                    if (!node) return 0;
+
+                    const parents = (node.talent_meta && node.talent_meta.parents) || [];
+                    if (parents.length === 0) return 0;
+
+                    let maxP = -1;
+                    parents.forEach(pid => {
+                        maxP = Math.max(maxP, getLevel(`talent-${pid}`, new Set(visited)));
+                    });
+                    return maxP + 1;
+                };
+
+                groupEntries.forEach(e => {
+                    nodes[e.id].level = getLevel(e.id);
+                });
+
+                // Group by Level
+                const levels = {};
+                Object.values(nodes).forEach(node => {
+                    if (!levels[node.level]) levels[node.level] = [];
+                    levels[node.level].push(node);
+                });
+
+                const maxLevel = Math.max(...Object.keys(levels).map(Number));
+
+                // Container
+                const groupContainer = document.createElement('div');
+                groupContainer.className = 'talent-group-container';
+                groupContainer.style.position = 'relative'; // relative for absolute svg
+                groupContainer.innerHTML = `<h3 style="color:var(--text-bright); margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px;">天赋组: ${groupId} <span style="font-size:12px;font-weight:normal;color:var(--text-muted);">(${groupEntries.length} 个天赋)</span></h3>`;
+
+                // SVG Layer
+                const svgId = `talent-svg-${groupId}`;
+                const svgLayer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svgLayer.setAttribute("id", svgId);
+                svgLayer.style.position = "absolute";
+                svgLayer.style.top = "0";
+                svgLayer.style.left = "0";
+                svgLayer.style.width = "100%";
+                svgLayer.style.height = "100%";
+                svgLayer.style.pointerEvents = "none";
+                svgLayer.style.zIndex = "1";
+                groupContainer.appendChild(svgLayer);
+
+                // Render Levels
+                for (let i = 0; i <= maxLevel; i++) {
+                    const levelNodes = levels[i] || [];
+                    if (levelNodes.length === 0) continue;
+
+                    const levelRow = document.createElement('div');
+                    levelRow.className = 'talent-level-row';
+
+                    levelNodes.forEach(node => {
+                        // Build icon HTML
+                        let iconHtml = '';
+                        if (node.icon) {
+                            iconHtml = `<img src="${node.icon}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;margin-right:10px;">`;
+                        }
+
+                        const parents = (node.talent_meta && node.talent_meta.parents) || [];
+                        const hasParents = parents.length > 0;
+
+                        levelRow.innerHTML += `
+                            <div class="talent-node" id="talent-node-${node.id}" onclick="loadEntry('${node.id}')" style="z-index:2;position:relative;">
+                                <div style="display:flex;align-items:center;margin-bottom:4px;">
+                                    ${iconHtml}
+                                    <div class="talent-node-title">${node.title}</div>
+                                </div>
+                                <div class="talent-node-desc">${node.content ? node.content.substring(0, 40) + (node.content.length > 40 ? '...' : '') : '暂无描述'}</div>
+                            </div>
+                         `;
+                    });
+
+                    groupContainer.appendChild(levelRow);
+                }
+
+                grid.appendChild(groupContainer);
+
+                // Draw Lines after slight delay
+                setTimeout(() => {
+                    const svg = document.getElementById(svgId);
+                    if (!svg) return;
+
+                    svg.setAttribute('width', groupContainer.scrollWidth);
+                    svg.setAttribute('height', groupContainer.scrollHeight);
+
+                    let pathHtml = '';
+                    const containerRect = groupContainer.getBoundingClientRect();
+
+                    groupEntries.forEach(node => {
+                        const el = document.getElementById(`talent-node-${node.id}`);
+                        if (!el) return;
+
+                        const parents = (node.talent_meta && node.talent_meta.parents) || [];
+                        parents.forEach(pid => {
+                            const pEl = document.getElementById(`talent-node-talent-${pid}`) || document.getElementById(`talent-node-${pid}`);
+
+                            if (pEl) {
+                                const r1 = pEl.getBoundingClientRect();
+                                const r2 = el.getBoundingClientRect();
+
+                                const x1 = r1.left + r1.width / 2 - containerRect.left + groupContainer.scrollLeft;
+                                const y1 = r1.bottom - containerRect.top + groupContainer.scrollTop;
+                                const x2 = r2.left + r2.width / 2 - containerRect.left + groupContainer.scrollLeft;
+                                const y2 = r2.top - containerRect.top + groupContainer.scrollTop;
+
+                                const cp1y = y1 + (y2 - y1) * 0.5;
+                                const cp2y = y2 - (y2 - y1) * 0.5;
+
+                                pathHtml += `<path d="M ${x1} ${y1} C ${x1} ${cp1y}, ${x2} ${cp2y}, ${x2} ${y2}" stroke="#666" stroke-width="2" fill="none" opacity="0.6" />`;
+                            }
+                        });
+                    });
+                    svg.innerHTML = pathHtml;
+                }, 100);
+            });
+        }
+
+        async function loadEntry(entryId) {
+            // 1. Immediate View Switch (Prevent flash of previous view)
+            document.getElementById('portalView').classList.add('hidden');
+            document.getElementById('categoryListView').classList.remove('active');
+            document.getElementById('entryView').classList.add('active');
+            document.getElementById('editView').classList.remove('active');
+            document.getElementById('searchDropdown').classList.remove('active');
+
+            // 2. Show Loading State
+            document.getElementById('entryTitle').textContent = '加载中...';
+            document.getElementById('entrySubtitle').textContent = '';
+            document.getElementById('entryBody').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">正在读取档案...</div>';
+
+            try {
+                const resp = await fetch('/api/wiki/' + entryId);
+                if (!resp.ok) {
+                    showToast('词条不存在', true);
+                    return;
+                }
+
+                const entry = await resp.json();
+                currentEntry = { id: entryId, ...entry };
+
+                // Breadcrumb
+                document.getElementById('breadcrumbType').textContent = typeNames[entry.type] || '词条';
+                document.getElementById('breadcrumbTitle').textContent = entry.title || entryId;
+
+                // Title
+                document.getElementById('entryTitle').textContent = entry.title || entryId;
+                document.getElementById('entrySubtitle').textContent = entry.subtitle || '';
+
+                // Body - render sections as markdown
+                let bodyHtml = '';
+                if (entry.sections) {
+                    for (const [section, content] of Object.entries(entry.sections)) {
+                        if (content) {
+                            bodyHtml += `<h2 > ${section}</h2> ${marked.parse(content)} `;
+                        }
+                    }
+                } else if (entry.content) {
+                    bodyHtml = marked.parse(entry.content);
+                }
+
+                // Add concept art / design images if present
+                if (entry.images && entry.images.length > 0) {
+                    bodyHtml += `<h2 > 设定图 / 概念图</h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 16px 0;">
+                                ${entry.images.map((url, idx) => `
+                                <a href="${url}" target="_blank" style="display: block; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
+                                    <img src="${url}" alt="设定图 ${idx + 1}" style="width: 100%; height: 150px; object-fit: cover;">
+                                </a>
+                            `).join('')}
+                            </div>`;
+                }
+
+                // Add related entries if present
+                if (entry.related && entry.related.length > 0) {
+                    bodyHtml += `<h2 > 相关词条</h2>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0;">
+                                ${entry.related.map(rid => {
+                        const relEntry = allEntries[rid] || {};
+                        return `
+                                    <a href="#" onclick="loadEntry('${rid}'); return false;" 
+                                       style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-bright); text-decoration: none; transition: all 0.2s;">
+                                        <span>${relEntry.icon || typeIcons[relEntry.type] || '📄'}</span>
+                                        <span>${relEntry.title || rid}</span>
+                                    </a>`;
+                    }).join('')}
+                            </div>`;
+                }
+
+                document.getElementById('entryBody').innerHTML = bodyHtml || '<p style="color: var(--text-muted);">暂无内容</p>';
+
+                // Infobox - cover image
+                const infoboxHeader = document.querySelector('.infobox-header');
+                const coverImgHtml = entry.cover_image ?
+                    `<div style="margin-bottom: 12px;" > <img src="${entry.cover_image}" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px;"></div>` : '';
+
+                // Infobox icon - support image URL
+                const iconEl = document.getElementById('infoboxIcon');
+                if (entry.icon && entry.icon.startsWith('/wiki/assets/')) {
+                    // 图片URL
+                    iconEl.innerHTML = `<img src = "${entry.icon}" alt = "${entry.title}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" > `;
+                } else if (entry.icon) {
+                    // 兼容旧的emoji
+                    iconEl.textContent = entry.icon;
+                } else {
+                    // 使用类型占位符
+                    const placeholder = typeIconPlaceholders[entry.type] || '?';
+                    iconEl.innerHTML = `<span style="font-size: 2.5rem; color: ${typeColors[entry.type] || '#888'};" > ${placeholder}</span> `;
+                }
+                document.getElementById('infoboxTitle').textContent = entry.title || entryId;
+                document.getElementById('infoboxType').textContent = typeNames[entry.type] || '词条';
+
+                // Insert cover image if exists
+                const existingCover = document.getElementById('infoboxCoverImage');
+                if (existingCover) existingCover.remove();
+                if (entry.cover_image) {
+                    infoboxHeader.insertAdjacentHTML('afterbegin',
+                        `<div id = "infoboxCoverImage" style="margin-bottom: 12px;" > <img src="${entry.cover_image}" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px;"></div>`);
+                }
+
+                const infoboxTable = document.getElementById('infoboxTable');
+                if (entry.infobox) {
+                    infoboxTable.innerHTML = Object.entries(entry.infobox).map(([key, value]) => `
+                            <div class="infobox-row" >
+                            <div class="infobox-label">${key}</div>
+                            <div class="infobox-value">${Array.isArray(value) ? value.join(', ') : value}</div>
+                        </div>
+                            `).join('');
+                } else {
+                    infoboxTable.innerHTML = '';
+                }
+
+                const tagsContainer = document.getElementById('infoboxTags');
+                if (entry.tags && entry.tags.length > 0) {
+                    tagsContainer.innerHTML = entry.tags.map(tag => `<span class="tag" > ${tag}</span> `).join('');
+                } else {
+                    tagsContainer.innerHTML = '';
+                }
+
+                history.pushState(null, '', '/wiki/' + entryId);
+            } catch (e) {
+                console.error('Failed to load entry:', e);
+                showToast('加载失败', true);
+            }
+        }
+
+        function requestEditMode() {
+            if (isAuthenticated) {
+                enterEditMode();
+            } else {
+                document.getElementById('verifyModal').classList.add('active');
+                document.getElementById('verifyCode').focus();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('verifyModal').classList.remove('active');
+            document.getElementById('verifyCode').value = '';
+        }
+
+        async function verifyCode() {
+            const code = document.getElementById('verifyCode').value;
+            try {
+                const resp = await fetch('/api/wiki/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: code })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    isAuthenticated = true;
+                    closeModal();
+
+                    // Check if this was triggered from category creation
+                    if (pendingNewEntryType) {
+                        currentEntry = null;
+                        enterEditMode();
+                        document.getElementById('editType').value = pendingNewEntryType;
+                        updateInfoboxFields();
+                        pendingNewEntryType = null;  // Clear the pending type
+                    } else {
+                        enterEditMode();
+                    }
+                    showToast('已进入编辑模式');
+                } else {
+                    showToast('验证码错误', true);
+                }
+            } catch (e) {
+                showToast('验证失败', true);
+            }
+        }
+
+        function enterEditMode() {
+            // Track previous view state
+            if (document.getElementById('entryView').classList.contains('active')) {
+                previousView = 'entryView';
+            } else if (document.getElementById('categoryListView').classList.contains('active')) {
+                previousView = 'categoryListView';
+            } else {
+                previousView = 'portalView';
+            }
+
+            // document.getElementById('portalView').classList.add('hidden'); // Modal mode: keep background
+            document.getElementById('entryView').classList.remove('active');
+            document.getElementById('editView').classList.add('active');
+
+            const deleteBtn = document.getElementById('deleteEntryBtn');
+
+            if (currentEntry) {
+                isNewEntry = false;
+                document.getElementById('editFormTitle').textContent = '编辑词条';
+                document.getElementById('editId').value = currentEntry.id;
+                document.getElementById('editId').disabled = true;
+                document.getElementById('editType').value = currentEntry.type || 'monster';
+                document.getElementById('editTitle').value = currentEntry.title || '';
+                document.getElementById('editSubtitle').value = currentEntry.subtitle || '';
+                document.getElementById('editTags').value = (currentEntry.tags || []).join(', ');
+
+                // Show delete button for existing entries
+                deleteBtn.style.display = 'inline-block';
+
+                // Load images and related entries
+                coverImageUrl = currentEntry.cover_image || '';
+                contentImages = currentEntry.images || [];
+                relatedEntries = currentEntry.related || [];
+                iconImageUrl = currentEntry.icon || '';  // 图标现在是图片URL
+
+                // Content from sections
+                let content = '';
+                if (currentEntry.sections) {
+                    for (const [section, text] of Object.entries(currentEntry.sections)) {
+                        if (text) {
+                            content += `## ${section} \n\n${text} \n\n`;
+                        }
+                    }
+                } else if (currentEntry.content) {
+                    content = currentEntry.content;
+                }
+                document.getElementById('editContent').value = content;
+            } else {
+                isNewEntry = true;
+                document.getElementById('editFormTitle').textContent = '创建新词条';
+                document.getElementById('editId').value = '';
+                document.getElementById('editId').disabled = false;
+                document.getElementById('editType').value = 'monster';
+                document.getElementById('editTitle').value = '';
+                document.getElementById('editSubtitle').value = '';
+                document.getElementById('editTags').value = '';
+                document.getElementById('editContent').value = '';
+                coverImageUrl = '';
+                contentImages = [];
+                relatedEntries = [];
+                iconImageUrl = '';
+
+                // Hide delete button for new entries
+                deleteBtn.style.display = 'none';
+            }
+
+            // Render image and related entries UI
+            renderCoverImagePreview();
+            renderContentImagesGallery();
+            renderRelatedEntries();
+            renderIconPreview();
+
+            // Render Talent specific fields
+            const talentFields = document.getElementById('editTalentFields');
+            if (document.getElementById('editType').value === 'talent') {
+                talentFields.style.display = 'block';
+                if (currentEntry && currentEntry.talent_meta) {
+                    document.getElementById('editTalentGroup').value = currentEntry.talent_meta.group_id || '';
+                    document.getElementById('editTalentParents').value = (currentEntry.talent_meta.parents || []).join(',');
+                } else {
+                    document.getElementById('editTalentGroup').value = '';
+                    document.getElementById('editTalentParents').value = '';
+                }
+            } else {
+                talentFields.style.display = 'none';
+            }
+
+
+            updateInfoboxFields();
+        }
+
+        function updateInfoboxFields() {
+            const type = document.getElementById('editType').value;
+            const container = document.getElementById('infoboxFieldsContainer');
+
+            if (!schema || !schema.types || !schema.types[type]) {
+                container.innerHTML = '<p style="color: var(--text-muted); margin: 16px 0;">加载字段模板...</p>';
+                return;
+            }
+
+            // Use suggested_fields from schema
+            const fields = schema.types[type].suggested_fields || [];
+            if (fields.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); margin: 16px 0;">该类型暂无预设字段</p>';
+                return;
+            }
+
+            let html = '<h3 style="color: var(--text-bright); font-size: 14px; margin: 0 0 16px 0;">📋 Infobox 属性</h3><div class="form-grid">';
+
+            for (const field of fields) {
+                const currentVal = currentEntry?.infobox?.[field.key] || '';
+                const val = Array.isArray(currentVal) ? currentVal.join(', ') : currentVal;
+
+                if (field.type === 'select' && field.options) {
+                    html += `
+                            <div class="form-group" >
+                            <label class="form-label">${field.label}</label>
+                            <select class="form-select" data-infobox="${field.key}">
+                                <option value="">-- 请选择 --</option>
+                                ${field.options.map(opt => `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+                            </select>
+                        </div>
+                            `;
+                } else {
+                    html += `
+                            <div class="form-group" >
+                            <label class="form-label">${field.label}</label>
+                            <input type="${field.type === 'number' ? 'number' : 'text'}" class="form-input" data-infobox="${field.key}" value="${val}" placeholder="${field.label}">
+                        </div>
+                        `;
+                }
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function cancelEdit() {
+            document.getElementById('editView').classList.remove('active');
+
+            // Restore previous view if it was entryView (which gets hidden)
+            if (previousView === 'entryView') {
+                document.getElementById('entryView').classList.add('active');
+            }
+            // categoryListView and portalView generally stay in background, so no need to re-add active unless they were hidden
+        }
+
+        // Global ESC handler
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('editView').classList.contains('active')) {
+                    cancelEdit();
+                } else if (document.getElementById('searchDropdown').classList.contains('active')) {
+                    closeSearchDropdown();
+                } else if (document.getElementById('linkPickerDropdown').classList.contains('active')) {
+                    document.getElementById('linkPickerDropdown').classList.remove('active');
+                }
+            }
+        });
+
+        function goBack() {
+            if (previousView === 'categoryListView' || (currentCategoryType)) {
+                showCategoryList(currentCategoryType || 'monster');
+            } else {
+                showPortal();
+            }
+        }
+
+        async function saveEntry() {
+            const id = document.getElementById('editId').value.trim();
+            const type = document.getElementById('editType').value;
+            const title = document.getElementById('editTitle').value.trim();
+            const subtitle = document.getElementById('editSubtitle').value.trim();
+            const tags = document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(t => t);
+            const content = document.getElementById('editContent').value;
+
+            if (!id || !title) {
+                showToast('请填写词条ID和标题', true);
+                return;
+            }
+
+            // Gather infobox fields
+            const infobox = {};
+            document.querySelectorAll('[data-infobox]').forEach(el => {
+                const key = el.dataset.infobox;
+                let value = el.value.trim();
+                // Check if it's an array field (contains comma)
+                if (value.includes(',')) {
+                    value = value.split(',').map(v => v.trim()).filter(v => v);
+                }
+                if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+                    infobox[key] = value;
+                }
+            });
+
+            // Parse sections from content
+            const sections = {};
+            const sectionRegex = /^## (.+)$/gm;
+            let lastIndex = 0;
+            let lastSection = '概述';
+            let match;
+
+            const contentLines = content.split('\n');
+            let currentSection = '概述';
+            let currentContent = [];
+
+            for (const line of contentLines) {
+                if (line.startsWith('## ')) {
+                    if (currentContent.length > 0) {
+                        sections[currentSection] = currentContent.join('\n').trim();
+                    }
+                    currentSection = line.substring(3).trim();
+                    currentContent = [];
+                } else {
+                    currentContent.push(line);
+                }
+            }
+            if (currentContent.length > 0) {
+                sections[currentSection] = currentContent.join('\n').trim();
+            }
+
+            const entryData = {
+                type,
+                title,
+                subtitle,
+                icon: iconImageUrl || '',  // 使用图片URL作为图标
+                tags,
+                infobox,
+                sections,
+                cover_image: coverImageUrl,
+                talent_meta: type === 'talent' ? {
+                    group_id: document.getElementById('editTalentGroup').value.trim(),
+                    parents: document.getElementById('editTalentParents').value.split(',').map(s => s.trim()).filter(s => s),
+                    raw_pre: '' // Optional
+                } : undefined,
+                images: contentImages,
+                related: relatedEntries
+            };
+
+            try {
+                const resp = await fetch('/api/wiki/' + id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(entryData)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast('保存成功！');
+                    await loadIndex();
+                    currentEntry = { id, ...entryData };
+                    await loadEntry(id);
+                } else {
+                    showToast('保存失败: ' + (data.message || ''), true);
+                }
+            } catch (e) {
+                showToast('保存失败', true);
+            }
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const dropdown = document.getElementById('searchDropdown');
+
+            if (!query) {
+                dropdown.classList.remove('active');
+                return;
+            }
+
+            const matches = Object.entries(allEntries).filter(([id, entry]) =>
+                (entry.title || '').toLowerCase().includes(query) ||
+                id.toLowerCase().includes(query) ||
+                (entry.subtitle || '').toLowerCase().includes(query) ||
+                (entry.tags || []).some(tag => tag.toLowerCase().includes(query))
+            ).slice(0, 8);
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = '<div class="search-no-result">未找到匹配的词条</div>';
+            } else {
+                dropdown.innerHTML = matches.map(([id, entry]) => {
+                    // 判断图标类型：图片URL、emoji或占位符
+                    let iconHtml;
+                    if (entry.icon && entry.icon.startsWith('/wiki/assets/')) {
+                        iconHtml = `<img src="${entry.icon}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">`;
+                    } else {
+                        const placeholder = typeIconPlaceholders[entry.type] || '?';
+                        iconHtml = `<span style="font-size:1.2rem;">${placeholder}</span>`;
+                    }
+                    return `
+                            <div class="search-result-item" onclick="loadEntry('${id}'); closeSearchDropdown();" >
+                        <div class="search-result-icon" style="background: ${typeColors[entry.type] || '#333'}22; color: ${typeColors[entry.type] || '#888'}">
+                            ${iconHtml}
+                        </div>
+                        <div class="search-result-info">
+                            <div class="search-result-title">${entry.title || id}</div>
+                            <div class="search-result-type">${typeNames[entry.type] || '未分类'}</div>
+                        </div>
+                    </div>
+                            `;
+                }).join('');
+            }
+
+            dropdown.classList.add('active');
+        }
+
+        function closeSearchDropdown() {
+            document.getElementById('searchDropdown').classList.remove('active');
+            document.getElementById('searchInput').value = '';
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-box')) {
+                document.getElementById('searchDropdown').classList.remove('active');
+            }
+            if (!e.target.closest('.entry-picker')) {
+                document.getElementById('entryPickerDropdown').classList.remove('active');
+            }
+        });
+
+        // ===== IMAGE UPLOAD FUNCTIONS =====
+
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const resp = await fetch('/api/wiki/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    return data.url;
+                } else {
+                    showToast('上传失败: ' + data.message, true);
+                    return null;
+                }
+            } catch (e) {
+                showToast('上传失败', true);
+                return null;
+            }
+        }
+
+        async function handleCoverImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showToast('正在上传...');
+            const url = await uploadImage(file);
+            if (url) {
+                coverImageUrl = url;
+                renderCoverImagePreview();
+                showToast('封面图上传成功');
+            }
+        }
+
+        function renderCoverImagePreview() {
+            const zone = document.getElementById('coverImageZone');
+            if (coverImageUrl) {
+                zone.innerHTML = `
+                            <img src = "${coverImageUrl}" class="image-preview" >
+                                <br>
+                                    <button class="image-remove-btn" onclick="event.stopPropagation(); removeCoverImage()">移除</button>
+                                    `;
+                zone.classList.add('has-image');
+            } else {
+                zone.innerHTML = `
+                    <div class="image-upload-icon">📷</div>
+                    <div class="image-upload-text">点击上传封面图片</div>
+                `;
+                zone.classList.remove('has-image');
+            }
+        }
+
+        function removeCoverImage() {
+            coverImageUrl = '';
+            renderCoverImagePreview();
+        }
+
+        // ===== ICON IMAGE UPLOAD =====
+        async function handleIconImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showToast('正在上传...');
+            const url = await uploadImage(file);
+            if (url) {
+                iconImageUrl = url;
+                renderIconPreview();
+                showToast('图标上传成功');
+            }
+            event.target.value = '';
+        }
+
+        function renderIconPreview() {
+            const zone = document.getElementById('iconUploadZone');
+            if (iconImageUrl) {
+                zone.innerHTML = `<img src="${iconImageUrl}" alt="词条图标">`;
+                zone.classList.add('has-icon');
+            } else {
+                zone.innerHTML = `
+                    <div class="icon-upload-placeholder" id="iconUploadPlaceholder">
+                        <span style="font-size: 1.5rem; color: var(--text-muted);">+</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">上传图标</span>
+                    </div>
+                `;
+                zone.classList.remove('has-icon');
+            }
+        }
+
+        function removeIconImage() {
+            iconImageUrl = '';
+            renderIconPreview();
+        }
+
+        async function handleContentImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showToast('正在上传...');
+            const url = await uploadImage(file);
+            if (url) {
+                contentImages.push(url);
+                renderContentImagesGallery();
+                showToast('图片上传成功');
+            }
+            event.target.value = '';
+        }
+
+        function renderContentImagesGallery() {
+            const gallery = document.getElementById('contentImagesGallery');
+            let html = contentImages.map((url, idx) => `
+                                    <div class="gallery-item">
+                                        <img src="${url}" alt="设定图 ${idx + 1}">
+                                            <button class="gallery-item-remove" onclick="removeContentImage(${idx})">×</button>
+                                    </div>
+                                    `).join('');
+
+            html += `
+                                    <div class="add-image-btn" onclick="document.getElementById('contentImageInput').click()">
+                                        <span style="font-size: 1.5rem;">+</span>
+                                        <span style="font-size: 12px;">添加图片</span>
+                                    </div>
+                                    `;
+            gallery.innerHTML = html;
+        }
+
+        function removeContentImage(index) {
+            contentImages.splice(index, 1);
+            renderContentImagesGallery();
+        }
+
+        // ===== RELATED ENTRIES SELECTOR =====
+        function filterEntriesForPicker() {
+            const query = document.getElementById('entryPickerInput').value.toLowerCase().trim();
+            const dropdown = document.getElementById('entryPickerDropdown');
+            const currentId = document.getElementById('editId').value;
+
+            if (!query) {
+                dropdown.classList.remove('active');
+                return;
+            }
+
+            const matches = Object.entries(allEntries).filter(([id, entry]) =>
+                id !== currentId &&
+                !relatedEntries.includes(id) &&
+                ((entry.title || '').toLowerCase().includes(query) || id.toLowerCase().includes(query))
+            ).slice(0, 6);
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = '<div style="padding: 12px; color: var(--text-muted); text-align: center;">未找到匹配词条</div>';
+            } else {
+                dropdown.innerHTML = matches.map(([id, entry]) => `
+                    <div class="entry-picker-item" onclick="addRelatedEntry('${id}')">
+                        <span class="entry-picker-item-icon">${entry.icon || typeIcons[entry.type] || '📄'}</span>
+                        <div class="entry-picker-item-info">
+                            <div class="entry-picker-item-title">${entry.title || id}</div>
+                            <div class="entry-picker-item-type">${typeNames[entry.type] || '未分类'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            dropdown.classList.add('active');
+        }
+
+        function addRelatedEntry(entryId) {
+            if (!relatedEntries.includes(entryId)) {
+                relatedEntries.push(entryId);
+                renderRelatedEntries();
+            }
+            document.getElementById('entryPickerInput').value = '';
+            document.getElementById('entryPickerDropdown').classList.remove('active');
+        }
+
+        function removeRelatedEntry(entryId) {
+            relatedEntries = relatedEntries.filter(id => id !== entryId);
+            renderRelatedEntries();
+        }
+
+        function renderRelatedEntries() {
+            const list = document.getElementById('relatedEntriesList');
+            if (relatedEntries.length === 0) {
+                list.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">暂无相关词条</span>';
+            } else {
+                list.innerHTML = relatedEntries.map(id => {
+                    const entry = allEntries[id] || {};
+                    return `
+                        <div class="related-entry-tag">
+                            <span>${entry.icon || '📄'}</span>
+                            <span>${entry.title || id}</span>
+                            <button class="related-entry-remove" onclick="removeRelatedEntry('${id}')">×</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // ===== RESET EDIT FORM =====
+        function resetEditFormState() {
+            coverImageUrl = '';
+            contentImages = [];
+            relatedEntries = [];
+            iconImageUrl = '';
+            renderCoverImagePreview();
+            renderContentImagesGallery();
+            renderRelatedEntries();
+            renderIconPreview();
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ===== EDITOR LINK PICKER =====
+        function toggleLinkPicker(btn) {
+            const dropdown = document.getElementById('linkPickerDropdown');
+            const isActive = dropdown.classList.contains('active');
+
+            // Close others
+            document.querySelectorAll('.editor-dropdown').forEach(d => d.classList.remove('active'));
+
+            if (!isActive) {
+                dropdown.classList.add('active');
+                // Position relative to button
+                const rect = btn.getBoundingClientRect();
+                const containerRect = btn.closest('.form-group').getBoundingClientRect();
+
+                dropdown.style.top = '30px';
+                dropdown.style.right = '0';
+
+                document.getElementById('linkPickerInput').focus();
+                filterLinkPicker();
+            } else {
+                dropdown.classList.remove('active');
+            }
+        }
+
+        function filterLinkPicker() {
+            const query = document.getElementById('linkPickerInput').value.toLowerCase().trim();
+            const list = document.getElementById('linkPickerList');
+            const currentId = document.getElementById('editId').value;
+
+            // Show recent or filtered
+            let matches = Object.entries(allEntries);
+
+            if (query) {
+                matches = matches.filter(([id, entry]) =>
+                    ((entry.title || '').toLowerCase().includes(query) || id.toLowerCase().includes(query))
+                );
+            }
+
+            matches = matches.slice(0, 8);
+
+            if (matches.length === 0) {
+                list.innerHTML = '<div style="padding: 8px; color: var(--text-muted); text-align: center;">无匹配</div>';
+            } else {
+                list.innerHTML = matches.map(([id, entry]) => `
+                    <div class="editor-dropdown-item" onclick="insertLink('${id}', '${entry.title || id}')">
+                        <span>${entry.icon || typeIcons[entry.type] || '📄'}</span>
+                        <span>${entry.title || id}</span>
+                        <span style="margin-left: auto; font-size: 10px; color: var(--text-muted);">${typeNames[entry.type] || '未知'}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function insertLink(id, title) {
+            const textarea = document.getElementById('editContent');
+            const textToInsert = `[${title}](/wiki/${id})`;
+
+            // Insert at cursor
+            const startPos = textarea.selectionStart;
+            const endPos = textarea.selectionEnd;
+            const text = textarea.value;
+
+            textarea.value = text.substring(0, startPos) + textToInsert + text.substring(endPos);
+
+            // Reset cursor
+            textarea.selectionStart = textarea.selectionEnd = startPos + textToInsert.length;
+            textarea.focus();
+
+            // Close picker
+            document.getElementById('linkPickerDropdown').classList.remove('active');
+            document.getElementById('linkPickerInput').value = '';
+        }
+
+        // Close editor dropdowns on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.editor-toolbar-btn') && !e.target.closest('.editor-dropdown')) {
+                document.getElementById('linkPickerDropdown').classList.remove('active');
+            }
+        });
+
+        // ===== DELETE ENTRY =====
+        function confirmDeleteEntry() {
+            if (!currentEntry || !currentEntry.id) {
+                showToast('没有要删除的词条', true);
+                return;
+            }
+
+            const title = currentEntry.title || currentEntry.id;
+            if (confirm(`确定要删除词条 "${title}" 吗？此操作不可撤销。`)) {
+                deleteEntry(currentEntry.id);
+            }
+        }
+
+        async function deleteEntry(entryId) {
+            try {
+                const resp = await fetch('/api/wiki/' + entryId, {
+                    method: 'DELETE'
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast('词条已删除');
+                    currentEntry = null;
+                    await loadIndex();
+                    renderPortal();
+                    showPortal();
+                } else {
+                    showToast('删除失败: ' + (data.message || ''), true);
+                }
+            } catch (e) {
+                showToast('删除失败', true);
+            }
+        }
+
+        function createNewEntryInCategory() {
+            if (!isAuthenticated) {
+                // Store the intended type for after verification
+                pendingNewEntryType = currentCategoryType;
+                document.getElementById('verifyModal').classList.add('active');
+                document.getElementById('verifyCode').focus();
+                return;
+            }
+
+            // Already authenticated - directly create
+            currentEntry = null;
+            enterEditMode();
+            if (currentCategoryType) {
+                document.getElementById('editType').value = currentCategoryType;
+                updateInfoboxFields();
+            }
+        }
+
+        // ===== KEYBOARD SHORTCUTS =====
+        document.addEventListener('keydown', (e) => {
+            // Escape - close modal or cancel edit
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('verifyModal');
+                if (modal.classList.contains('active')) {
+                    closeModal();
+                    return;
+                }
+
+                const editView = document.getElementById('editView');
+                if (editView.classList.contains('active')) {
+                    cancelEdit();
+                    return;
+                }
+            }
+
+            // Ctrl+S - save entry (in edit mode)
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                const editView = document.getElementById('editView');
+                if (editView.classList.contains('active')) {
+                    e.preventDefault();
+                    saveEntry();
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

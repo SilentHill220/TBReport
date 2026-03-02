@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮助文档中心</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <!-- Docs CSS -->
+    <link rel="stylesheet" href="/static/css/docs.css">
+    <!-- Marked -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="docs-header">
+        <a href="/docs" class="header-logo">
+            <span>📚</span>
+            <span>帮助文档中心</span>
+        </a>
+
+        <div class="search-box">
+            <i class="search-icon">🔍</i>
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索文档..." oninput="handleSearch()">
+        </div>
+
+        <div class="header-actions">
+            <a href="/wiki" class="header-logo"
+                style="font-size: 14px; color: var(--text-secondary); margin-right: 16px;">
+                Wiki
+            </a>
+            <button class="login-btn" onclick="requestLogin()">登录</button>
+        </div>
+    </header>
+
+    <div class="docs-container">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar">
+            <div class="sidebar-header">文档目录</div>
+            <div class="sidebar-content" id="sidebarContent">
+                <!-- Dynamic Tree -->
+                <div style="padding:16px; color:var(--text-secondary);">加载中...</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="docs-main" id="mainContent">
+            <!-- Content Injected Here -->
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal-box">
+            <div class="modal-title">管理员验证</div>
+            <input type="password" class="modal-input" id="verifyCode" placeholder="访问码">
+            <div class="modal-actions">
+                <button class="login-btn"
+                    style="background:transparent; border:1px solid var(--border); color:var(--text-primary);"
+                    onclick="closeModal()">取消</button>
+                <button class="login-btn" onclick="verifyCode()">验证</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Docs JS -->
+    <script src="/static/js/docs.js"></script>
+
+</body>
+
+</html>

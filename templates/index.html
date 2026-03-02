@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teambition 任务助手</title>
+    <!-- Google Fonts for Modern Feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --text-color: #2d3748;
+            --accent-color: #5a67d8;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--primary-gradient);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .container {
+            background: var(--glass-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 90%;
+            max-width: 420px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            color: #1a202c;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* Inputs */
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+            position: relative;
+        }
+
+        .input-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 6px;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper input,
+        .input-wrapper textarea {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .input-wrapper textarea {
+            padding: 12px 15px;
+            min-height: 80px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .input-wrapper input:focus,
+        .input-wrapper textarea:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.2);
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #a0aec0;
+        }
+
+        /* Buttons */
+        .btn-grid {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-robot {
+            background-color: white;
+            color: var(--text-color);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-robot:hover {
+            background-color: #f7fafc;
+            border-color: #cbd5e0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-all {
+            background: linear-gradient(90deg, #4299e1 0%, #667eea 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+
+        .btn-all:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 6px 16px rgba(66, 153, 225, 0.4);
+        }
+
+        .btn-dash {
+            background: #2d3748;
+            color: white;
+        }
+
+        .btn-dash:hover {
+            background: #1a202c;
+        }
+
+        .btn-save {
+            background: #48bb78;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .btn-save:hover {
+            background: #38a169;
+        }
+
+        .btn-config {
+            background: #ed8936;
+            color: white;
+            margin-top: 5px;
+            font-size: 14px;
+            padding: 10px;
+        }
+
+        .btn-config:hover {
+            background: #dd6b20;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 25px 0;
+        }
+
+        /* Schedule Box */
+        .schedule-box,
+        .config-box {
+            background: #f7fafc;
+            border: 1px solid #edf2f7;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .schedule-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .schedule-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        /* Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e0;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #48bb78;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(16px);
+        }
+
+        /* Collapsible Config */
+        .config-details {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .config-toggle {
+            cursor: pointer;
+            color: #5a67d8;
+            font-size: 12px;
+            text-decoration: underline;
+            text-align: right;
+            display: block;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 14px;
+            min-height: 24px;
+            font-weight: 500;
+        }
+
+        .loading {
+            color: #d69e2e;
+        }
+
+        .success {
+            color: #38a169;
+        }
+
+        .error {
+            color: #e53e3e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Teambition 助手</h1>
+        <div class="subtitle">自动化任务追踪与汇报系统</div>
+
+        <div class="input-group">
+            <label class="input-label" for="tokenInput">Access Code</label>
+            <div class="input-wrapper">
+                <span class="input-icon">🔒</span>
+                <input type="password" id="tokenInput" placeholder="输入验证码解锁">
+            </div>
+        </div>
+
+        <div class="btn-grid">
+            <!-- Dynamic Robot Buttons -->
+            {% if robots %}
+            {% for name, cfg in robots.items() %}
+            <button class="btn-robot" onclick="runReport('{{ name }}')">
+                🚀 发送给 {{ name }}
+            </button>
+            {% endfor %}
+            {% else %}
+            <button class="btn-robot" disabled>⚠️ 未配置机器人</button>
+            {% endif %}
+
+            <!-- Broadcast Button -->
+            <button class="btn-all" onclick="runReport(null)">
+                📡 广播给所有群
+            </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Schedule Section -->
+        <div class="schedule-box">
+            <div class="schedule-header">
+                <span class="schedule-title">⏱️ 每日定时发送</span>
+                <label class="switch">
+                    <input type="checkbox" id="schedEnable">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="input-group mb-0">
+                <label class="input-label" style="margin-bottom: 5px;">发送时间 (24小时制)</label>
+                <div class="input-wrapper">
+                    <input type="time" id="schedTime" style="padding-left:15px;" value="09:30">
+                </div>
+            </div>
+            <button class="btn-save" onclick="saveSchedule()">
+                💾 保存定时设置
+            </button>
+        </div>
+
+        <!-- Switches Section -->
+        <div class="schedule-box">
+            <div class="schedule-header">
+                <span class="schedule-title">🎛️ 消息内容控制</span>
+                <button class="btn-config" style="margin:0; padding:5px 10px; font-size:12px; height:auto; width:auto;"
+                    onclick="saveSwitches()">💾 保存</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">📊 日报汇总 (看板/列表)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="sw_summary">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">🚫 异常预警 (闲置/过载)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="sw_anomaly">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">📢 变动通知 (Diff)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="sw_diff">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">⚡ 并行监控 (Interval)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="sw_interval">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wiki Category Settings -->
+        <div class="schedule-box">
+            <div class="schedule-header">
+                <span class="schedule-title">📚 Wiki 分类显示</span>
+                <button class="btn-config" style="margin:0; padding:5px 10px; font-size:12px; height:auto; width:auto;"
+                    onclick="saveWikiSettings()">💾 保存</button>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">👾 怪物图鉴</span>
+                    <label class="switch">
+                        <input type="checkbox" id="wiki_monster" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">🔮 道具遗物</span>
+                    <label class="switch">
+                        <input type="checkbox" id="wiki_item" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">🧬 天赋系统</span>
+                    <label class="switch">
+                        <input type="checkbox" id="wiki_talent" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">👤 角色介绍</span>
+                    <label class="switch">
+                        <input type="checkbox" id="wiki_character" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:14px; color:#4a5568;">📜 世界设定</span>
+                    <label class="switch">
+                        <input type="checkbox" id="wiki_lore" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Config Section -->
+        <div class="config-box">
+            <div class="schedule-header">
+                <span class="schedule-title">🛠️ 快速配置 (cURL)</span>
+                <span class="config-toggle" onclick="toggleConfig()">展开/收起</span>
+            </div>
+            <div class="config-details" id="configSection">
+                <div class="input-group mb-0">
+                    <label class="input-label" style="margin-bottom: 5px;">粘贴 cURL 命令</label>
+                    <div class="input-wrapper">
+                        <textarea id="curlInput"
+                            placeholder="bash curl 'https://www.teambition.com/api/...' -H 'cookie: ...'"></textarea>
+                    </div>
+                </div>
+                <button class="btn-config" onclick="parseCurl()">
+                    🔄 解析并更新 Config
+                </button>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <button class="btn-dash" onclick="window.location.href='/dashboard'">
+            📊 进入数据看板
+        </button>
+
+        <button class="btn-dash" style="background: #2c5282; margin-top: 10px;" onclick="window.location.href='/wiki'">
+            📚 项目 Wiki
+        </button>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Init
+        window.addEventListener('load', async () => {
+            try {
+                const r = await fetch('/api/schedule');
+                const d = await r.json();
+                document.getElementById('schedEnable').checked = d.enabled;
+                if (d.time) document.getElementById('schedTime').value = d.time;
+            } catch (e) { console.error(e); }
+
+            try {
+                const r = await fetch('/api/switches');
+                const s = await r.json();
+                document.getElementById('sw_summary').checked = s.daily_summary !== false;
+                document.getElementById('sw_anomaly').checked = s.daily_anomaly !== false;
+                document.getElementById('sw_diff').checked = s.daily_diff !== false;
+                document.getElementById('sw_interval').checked = s.interval_alert !== false;
+            } catch (e) { console.error(e); }
+
+            // Load Wiki settings
+            try {
+                const r = await fetch('/api/wiki-settings');
+                const s = await r.json();
+                const hidden = s.hidden_categories || [];
+                document.getElementById('wiki_monster').checked = !hidden.includes('monster');
+                document.getElementById('wiki_item').checked = !hidden.includes('item');
+                document.getElementById('wiki_talent').checked = !hidden.includes('talent');
+                document.getElementById('wiki_character').checked = !hidden.includes('character');
+                document.getElementById('wiki_lore').checked = !hidden.includes('lore');
+            } catch (e) { console.error(e); }
+        });
+
+        async function saveWikiSettings() {
+            const statusDiv = document.getElementById('status');
+            const categories = ['monster', 'item', 'talent', 'character', 'lore'];
+            const hidden = categories.filter(cat => !document.getElementById('wiki_' + cat).checked);
+
+            statusDiv.innerHTML = '<span class="loading">⏳ 保存Wiki设置...</span>';
+            try {
+                const r = await fetch('/api/wiki-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hidden_categories: hidden })
+                });
+                const d = await r.json();
+                if (d.success) statusDiv.innerHTML = '<span class="success">✅ Wiki设置已更新!</span>';
+                else statusDiv.innerHTML = '<span class="error">❌ 保存失败</span>';
+            } catch (e) { statusDiv.innerHTML = '<span class="error">❌ 网络异常</span>'; }
+        }
+
+        function toggleConfig() {
+            const el = document.getElementById('configSection');
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+
+        async function saveSchedule() {
+            const enabled = document.getElementById('schedEnable').checked;
+            const time = document.getElementById('schedTime').value;
+            const statusDiv = document.getElementById('status');
+
+            if (!time) { alert('请输入时间'); return; }
+
+            statusDiv.innerHTML = '<span class="loading">⏳ 保存中...</span>';
+            try {
+                const r = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled, time })
+                });
+                const d = await r.json();
+                if (d.success) statusDiv.innerHTML = '<span class="success">✅ 设置已更新!</span>';
+                else statusDiv.innerHTML = '<span class="error">❌ 保存失败</span>';
+            } catch (e) { statusDiv.innerHTML = '<span class="error">❌ 网络异常</span>'; }
+        }
+
+        async function parseCurl() {
+            const curl = document.getElementById('curlInput').value;
+            const statusDiv = document.getElementById('status');
+            if (!curl) { alert('请粘贴cURL命令'); return; }
+
+            statusDiv.innerHTML = '<span class="loading">⏳ 解析中...</span>';
+            try {
+                const r = await fetch('/api/parse_curl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ curl })
+                });
+                const d = await r.json();
+                if (d.success) {
+                    statusDiv.innerHTML = `<span class="success">✅ ${d.message}</span>`;
+                    document.getElementById('curlInput').value = ''; // clear
+                }
+                else statusDiv.innerHTML = `<span class="error">❌ 解析失败: ${d.message}</span>`;
+            } catch (e) { statusDiv.innerHTML = '<span class="error">❌ 网络异常</span>'; }
+        }
+
+        async function saveSwitches() {
+            const statusDiv = document.getElementById('status');
+            const data = {
+                daily_summary: document.getElementById('sw_summary').checked,
+                daily_anomaly: document.getElementById('sw_anomaly').checked,
+                daily_diff: document.getElementById('sw_diff').checked,
+                interval_alert: document.getElementById('sw_interval').checked
+            };
+
+            statusDiv.innerHTML = '<span class="loading">⏳ 保存开关...</span>';
+            try {
+                const r = await fetch('/api/switches', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const d = await r.json();
+                if (d.success) statusDiv.innerHTML = '<span class="success">✅ 开关已更新!</span>';
+                else statusDiv.innerHTML = '<span class="error">❌ 保存失败</span>';
+            } catch (e) { statusDiv.innerHTML = '<span class="error">❌ 网络异常</span>'; }
+        }
+
+        async function runReport(robot) {
+            const statusDiv = document.getElementById('status');
+            const tokenInput = document.getElementById('tokenInput');
+            const token = tokenInput.value;
+            const btns = document.querySelectorAll('button');
+
+            if (!token) {
+                statusDiv.innerHTML = '<span class="error">⚠️ 请输入验证码!</span>';
+                tokenInput.focus();
+                tokenInput.style.borderColor = '#e53e3e';
+                setTimeout(() => tokenInput.style.borderColor = '#e2e8f0', 500);
+                return;
+            }
+
+            btns.forEach(b => b.disabled = true);
+            statusDiv.innerHTML = '<span class="loading">⏳ 正在处理请求...</span>';
+
+            try {
+                const response = await fetch('/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        robot: robot,
+                        token: token
+                    })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) statusDiv.innerHTML = '<span class="success">✅ 发送成功!</span>';
+                else statusDiv.innerHTML = `<span class="error">❌ 发送失败: ${data.message || 'Error'}</span>`;
+            } catch (error) { statusDiv.innerHTML = `<span class="error">❌ 网络异常</span>`; }
+            finally { btns.forEach(b => b.disabled = false); }
+        }
+    </script>
+</body>
+
+</html>

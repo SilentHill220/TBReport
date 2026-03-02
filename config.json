@@ -1,0 +1,154 @@
+{
+  "teambition": {
+    "api_url": "https://www.teambition.com/api/project/68e8be794991ad9a71b7a577/task/export",
+    "project_id": "68e8be794991ad9a71b7a577",
+    "cookies": {
+      "_ga": "GA1.2.1967364282.1674974419",
+      "cna": "L2mHIEV8uH8CAbcvM5SB3y2X",
+      "_ga_W3P8NGKXX5": "GS2.2.s1766367753$o9$g0$t1766367760$j53$l0$h0",
+      "TEAMBITION_SESSIONID": "eyJhdXRoVXBkYXRlZCI6MTYyNTQ0OTE4MDkyNywiaWF0IjoxNzY2NzQ1ODU1LCJsb2dpbkZyb20iOiJkaW5nVGFsayIsImxvZ2luVGltZSI6MCwic3RhdGUiOnt9LCJ1aWQiOiI2MGUyNjJkYzA5MTY5YTE0MzJhMmI5Y2YiLCJ1c2VyIjp7Il9pZCI6IjYwZTI2MmRjMDkxNjlhMTQzMmEyYjljZiIsIm5hbWUiOiLluoTpuY/nqIsiLCJlbWFpbCI6IjY3MjI0NjM5N0BxcS5jb20iLCJhdmF0YXJVcmwiOiJodHRwczovL3Rjcy50ZWFtYml0aW9uLm5ldC90aHVtYm5haWwvMTEyN2JkYWFmZGE1Y2VhNmYyNTYzZDA0NDE1ODQxYmIxMGJhL3cvMjAwL2gvMjAwIiwicmVnaW9uIjoiIiwibGFuZyI6IiIsImlzUm9ib3QiOmZhbHNlLCJvcGVuSWQiOiIiLCJwaG9uZUZvckxvZ2luIjoiIiwib3JnYW5pemF0aW9uSWQiOiIifX0=",
+      "TEAMBITION_SESSIONID.sig": "3nfKSQ9VOrtYvuAp0vvG38Tmx9o",
+      "TB_ACCESS_TOKEN": "eyJhbGciOiJFZDI1NTE5IiwidHlwIjoiSldUIn0.eyJhcHAiOiI1ZDRjZWMzMGE1NWMwOTAwMDE3MWNiZDQiLCJhdWQiOiIiLCJleHAiOjE3NjcwMDUwNjAsImlhdCI6MTc2Njc0NTg2MCwiaXNzIjoidHdzIiwianRpIjoiSDl6WGNsTnlmTkZVSzI5cllPczRnbWhZcENqdzcwZHlVZnBELWlWUnFBTT0iLCJyZW5ld2VkIjoxNjI1NDQ5MTgwOTI3LCJzY3AiOlsiYXBwX3VzZXIiXSwic3ViIjoiNjBlMjYyZGMwOTE2OWExNDMyYTJiOWNmIiwidHlwIjoiYWNjZXNzX3Rva2VuIn0.UCRwmF_UhRRgSpc1VZMPmMnR2RxXcPmCAvsSr-nkMS6JEpAfRLIhpT1nC319MCWzqJTL3QWu40aEoicUbghOAg",
+      "TB_GTA": "%7B%22pf%22%3A%7B%22cd%22%3A%22.teambition.com%22%2C%22dr%22%3A0%7D%2C%22uk%22%3A%2260e262dc09169a1432a2b9cf%22%7D",
+      "_bl_uid": "s3mwmjUwmddqRjw9v55gan6dqyjF",
+      "referral": "%7B%22domain%22%3A%22www.teambition.com%22%2C%22path%22%3A%22%2Fproject%2F68e8be794991ad9a71b7a577%2Ftasks%2Fview%2F68e8c82ff3b02cfadd7a0486%22%2C%22query%22%3A%22%22%2C%22hash%22%3A%22%22%7D",
+      "_cioid": "60e262dc09169a1432a2b9cf",
+      "teambition_lang": "zh",
+      "x-guest-user": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRlIjoxNzY2NzQ5NDY0NDI1LCJpYXQiOjE3NjY3NDk0NjR9.7a-lbXH-En0V0Fvw7MKXNPFXMRKkvswJJMfX77eSYBA",
+      "region": "cn"
+    }
+  },
+  "web_token": "evilom",
+  "help_docs_path": "h:\\projects\\TBData\\help_docs",
+  "dashboard_url": "http://10.4.12.236:5000/dashboard",
+  "export": {
+    "tql": "taskLayer IN (0,1,2,3,4,5,6,7,8) ORDER BY isDone ASC, created DESC",
+    "fileType": "csv",
+    "resourceType": "task",
+    "scope": "taskflowstatus",
+    "fields": "*",
+    "timezone": 8,
+    "joinParentSubtask": false
+  },
+  "scheduler": {
+    "enabled": true,
+    "mode": "daily",
+    "time": "09:30"
+  },
+  "output": {
+    "csv_dir": "./data",
+    "summary_file": "./data/summary.json"
+  },
+  "dingtalk": {
+    "enabled": true,
+    "robots": {
+      "test": {
+        "webhook": "https://oapi.dingtalk.com/robot/send?access_token=c0562101e60acc435b0d5e7ccb661abb7ade8795883a75f3ed8d62fd380e9d71",
+        "secret": "SEC6ad39223b9a4a15f1f9910449a4a32e2b998fd99eb7c4b4bfa6088e69bb0bbc6"
+      },
+      "default": {
+        "webhook": "https://oapi.dingtalk.com/robot/send?access_token=795b367aa33943a018ba9feea66fa976f5977faac51cc336dbe5e5dcd6aef74d",
+        "secret": "SEC6705d92280d9d47c6f5ebe9856d2dbd24372306340b8877ba6bcbf7655d1d04e"
+      }
+    },
+    "switches": {
+      "daily_summary": true,
+      "daily_anomaly": false,
+      "daily_diff": true,
+      "interval_alert": true
+    }
+  },
+  "user_roles": {
+    "庄鹏程": "客户端",
+    "吴赛": "客户端",
+    "韩嵩洋": "客户端",
+    "刘云飞": "客户端",
+    "胡辉俊": "客户端",
+    "肖兵丰": "客户端",
+    "陈坤鹏": "客户端",
+    "卢杨智": "客户端",
+    "邓豪": "客户端",
+    "杨小品": "服务端",
+    "李晓东": "服务端",
+    "李伟平": "服务端",
+    "邹明洋": "服务端",
+    "张家振": "服务端",
+    "闫明亮": "策划",
+    "叶嗣文": "策划",
+    "赵俊伟": "策划",
+    "彭俊豪": "策划",
+    "张广辉": "策划",
+    "梁修": "策划",
+    "彭思远": "测试"
+  },
+  "user_mobiles": {
+    "庄鹏程": "13115923024",
+    "吴赛": "18824600912",
+    "韩嵩洋": "15139536591",
+    "刘云飞": "15736873511",
+    "胡辉俊": "18138869633",
+    "肖兵丰": "18750935525",
+    "陈坤鹏": "13213030816",
+    "卢杨智": "13308232339",
+    "邓豪": "13873872789",
+    "杨小品": "15919833472",
+    "李晓东": "15625289757",
+    "李伟平": "18613144209",
+    "邹明洋": "17620419147",
+    "张家振": "13380789329"
+  },
+  "imgbb": {
+    "api_key": "3d6db51a136a8993c6d14e2c14ccf3bc"
+  },
+  "teams": {
+    "怪物组": {
+      "client_lead": "刘云飞",
+      "server_lead": "李晓东",
+      "assistants": [
+        "吴赛 (客户端)"
+      ],
+      "notes": ""
+    },
+    "场景组": {
+      "client_lead": "吴赛",
+      "server_lead": "李伟平",
+      "assistants": [],
+      "notes": ""
+    },
+    "技能组": {
+      "client_lead": "胡辉俊",
+      "server_lead": "邹明洋",
+      "assistants": [
+        "刘云飞 (客户端)",
+        "张家振 (服务端)"
+      ],
+      "notes": ""
+    },
+    "表现组": {
+      "client_lead": "韩嵩洋",
+      "server_lead": null,
+      "assistants": [],
+      "notes": ""
+    },
+    "音效组": {
+      "client_lead": "肖兵丰",
+      "server_lead": null,
+      "assistants": [],
+      "notes": ""
+    },
+    "业务组": {
+      "client_lead": "陈坤鹏",
+      "server_lead": "杨小品",
+      "assistants": [
+        "庄鹏程 (客户端)",
+        "张家振 (服务端)"
+      ],
+      "notes": "UI业务等统一找坤鹏。其他需求涵盖比较多，装备、武器、遗物等，所以找不到对应人员的就找鹏程统筹。"
+    }
+  },
+  "wiki": {
+    "hidden_categories": [
+      "talent"
+    ]
+  }
+}
