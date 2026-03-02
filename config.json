@@ -49,6 +49,10 @@
       "default": {
         "webhook": "https://oapi.dingtalk.com/robot/send?access_token=795b367aa33943a018ba9feea66fa976f5977faac51cc336dbe5e5dcd6aef74d",
         "secret": "SEC6705d92280d9d47c6f5ebe9856d2dbd24372306340b8877ba6bcbf7655d1d04e"
+      },
+      "音效需求追踪": {
+        "webhook": "https://oapi.dingtalk.com/robot/send?access_token=04a642e31f6519f074c518438c13776771f6ade494f05f383a5058f1822dddd5",
+        "secret": "SEC6086c4929f145c87afe76b888800d5e66dacc5a6f3a8b183421afb4b91ff4b84"
       }
     },
     "switches": {
