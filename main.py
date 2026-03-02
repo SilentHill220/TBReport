@@ -1,6 +1,13 @@
 import sys
 import os
 import argparse
+
+# Fix Windows console encoding for Unicode (e.g. emoji in task titles)
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
 from config import Config
 from teambition_api import TeambitionAPI
 from task_analyzer import TaskAnalyzer
